@@ -1,5 +1,7 @@
 package com.finrizika.app;
 
+import java.util.Optional;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -75,7 +77,7 @@ public class UserController{
         user.setTelephone(data.getTelephone());
         user.setRole(Role.INVESTOR);
         userRepository.save(user);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok("User creation successful");
     }
     // -----------------------------------------------------------------------
 
@@ -108,18 +110,21 @@ public class UserController{
     // POST request -> /api/v1/login. Body su "email", "password". Perduoda COOKIE.
     @PostMapping(value = "/api/v1/login")
     public ResponseEntity<?> login(HttpServletRequest request, @RequestBody RequestLoginUser data){
-        User userByEmail = userRepository.findByEmail(data.getEmail());
-        if(userByEmail == null) return ResponseEntity.status(401).body(null);
+        if(data.getEmail() == null || data.getPassword() == null) return ResponseEntity.status(401).body("Incorrect request");
+        
+        Optional<User> userByEmail = userRepository.findByEmail(data.getEmail());
+        if(!userByEmail.isPresent()) return ResponseEntity.status(401).body("User not found");
+        User user = userByEmail.get();
 
-        boolean matches = encoder.matches(data.getPassword(), userByEmail.getPassword());
+        boolean matches = encoder.matches(data.getPassword(), user.getPassword());
         if(matches){
             HttpSession session = request.getSession(true);
-            session.setAttribute("id", userByEmail.getId());
-            session.setAttribute("role", userByEmail.getRole());
-            return ResponseEntity.ok(null);
+            session.setAttribute("id", user.getId());
+            session.setAttribute("role", user.getRole());
+            return ResponseEntity.ok("Login successful");
         }
 
-        return ResponseEntity.status(401).body(null);
+        return ResponseEntity.status(401).body("Login failed");
     }
     // -----------------------------------------------------------------------
 }

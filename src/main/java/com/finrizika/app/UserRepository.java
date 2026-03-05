@@ -1,10 +1,8 @@
 package com.finrizika.app;
 
-import org.springframework.data.repository.Repository;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends Repository<User, Long> {
-    User save(User user);
-    User findOne(Long id);
-    
-    User findByEmail(String email);
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
 }
