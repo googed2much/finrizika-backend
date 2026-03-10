@@ -1,0 +1,7 @@
+ADMIN:
+email: admin@ktu.lt
+password: admin
+
+INVESTOR:
+email: investor@ktu.lt
+password: investor

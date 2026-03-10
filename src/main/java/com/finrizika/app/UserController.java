@@ -5,35 +5,20 @@ import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @RestController
+@RequestMapping("/api/users")
 public class UserController{
 
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder encoder;
+    private final UserService userService;
 
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
-        this.encoder = new BCryptPasswordEncoder(12);
+    public UserController(UserService userService){
+        this.userService = userService;
     }
-    
-    // -----------------------------------------------------------------------
-    // Autorizacija veiksmams. Perduoti request'a ir parinkti, kuria role reikia atitikti.
-    public boolean authorize(HttpServletRequest request, Role requiredRole){
-        HttpSession session = request.getSession(false);
-        if(session == null) return false;
-
-        Long userId = (Long) session.getAttribute("id");
-        Role role = (Role) session.getAttribute("role");
-        if(userId != null && role != null && role == requiredRole) return role.ordinal() >= requiredRole.ordinal();
-
-        return false;
-    }
-    // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
     public static class RequestCreateUser{
@@ -68,15 +53,11 @@ public class UserController{
             this.telephone = telephone;
         }
     }
-    // POST request -> /api/v1/user/create. Body su "email", "password", "telephone".
-    @PostMapping(value = "/api/v1/user/create")
-    public ResponseEntity<?> createUser(@RequestBody RequestCreateUser data){
-        User user = new User();
-        user.setEmail(data.getEmail());
-        user.setPassword(encoder.encode(data.getPassword()));
-        user.setTelephone(data.getTelephone());
-        user.setRole(Role.INVESTOR);
-        userRepository.save(user);
+    // POST request -> /api/users/create. Body su "email", "password", "telephone".
+    @PostMapping(value = "/create")
+    public ResponseEntity<?> createUser(HttpServletRequest request, @RequestBody RequestCreateUser data){
+        if(data.getEmail() == null || data.getPassword() == null || data.getTelephone() == null) return ResponseEntity.badRequest().body("Missing parameters");
+        userService.createUser(data.getEmail(), data.getPassword(), data.getTelephone(), Role.INVESTOR);
         return ResponseEntity.ok("User creation successful");
     }
     // -----------------------------------------------------------------------
@@ -107,24 +88,18 @@ public class UserController{
         }
 
     }
-    // POST request -> /api/v1/login. Body su "email", "password". Perduoda COOKIE.
-    @PostMapping(value = "/api/v1/login")
+    // POST request -> /api/users/login. Body su "email", "password". Perduoda COOKIE.
+    @PostMapping(value = "/login")
     public ResponseEntity<?> login(HttpServletRequest request, @RequestBody RequestLoginUser data){
         if(data.getEmail() == null || data.getPassword() == null) return ResponseEntity.status(401).body("Incorrect request");
         
-        Optional<User> userByEmail = userRepository.findByEmail(data.getEmail());
-        if(!userByEmail.isPresent()) return ResponseEntity.status(401).body("User not found");
-        User user = userByEmail.get();
+        Optional<User> user = userService.authenticate(data.getEmail(), data.getPassword());
+        if(!user.isPresent()) return ResponseEntity.status(401).body("Wrong email or password");
 
-        boolean matches = encoder.matches(data.getPassword(), user.getPassword());
-        if(matches){
-            HttpSession session = request.getSession(true);
-            session.setAttribute("id", user.getId());
-            session.setAttribute("role", user.getRole());
-            return ResponseEntity.ok("Login successful");
-        }
-
-        return ResponseEntity.status(401).body("Login failed");
+        HttpSession session = request.getSession(true);
+        session.setAttribute("id", user.get().getId());
+        session.setAttribute("role", user.get().getRole());
+        return ResponseEntity.ok("Login successful");
     }
     // -----------------------------------------------------------------------
 }
