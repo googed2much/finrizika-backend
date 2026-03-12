@@ -2,16 +2,9 @@ package com.finrizika.app;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 
 @Entity
-public class Company {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+public class CompanyData {
 
     @Column(nullable = false)
     private double quickLiquidityRatio;
@@ -31,18 +24,13 @@ public class Company {
     @Column(nullable = false)
     private double changeInSalesRevenue;
 
-    public Company() {
+    @Column(nullable = false)
+    private long companyId;
+
+    public CompanyData() {
     }
 
     // Getters and setters...
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
 
     public double getQuickLiquidityRatio() {
         return quickLiquidityRatio;
@@ -90,5 +78,13 @@ public class Company {
 
     public void setChangeInSalesRevenue(double changeInSalesRevenue) {
         this.changeInSalesRevenue = changeInSalesRevenue;
+    }
+
+    public long getCompanyId() {
+        return this.companyId;
+    }
+
+    public void setCompanyId(long companyId) {
+        this.companyId = companyId;
     }
 }

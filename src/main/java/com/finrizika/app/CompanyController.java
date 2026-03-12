@@ -9,10 +9,10 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping("/api/company")
 public class CompanyController {
 
-    private final CompanyService companyService;
+    private final CompanyDataService companyDataService;
 
-    public CompanyController(CompanyService companyService) {
-        this.companyService = companyService;
+    public CompanyController(CompanyDataService companyDataService) {
+        this.companyDataService = companyDataService;
     }
 
     // -----------------------------------------------------------------------
@@ -84,7 +84,7 @@ public class CompanyController {
     // -----------------------------------------------------------------------
     @PostMapping("/create")
     public ResponseEntity<?> createCompanyInfo(HttpServletRequest request, @RequestBody RequestCreateCompanyInfo data) {
-        companyService.createCompany(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue());
+        companyDataService.createCompanyData(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue());
         return ResponseEntity.ok("Company created successfully");
     }
 
