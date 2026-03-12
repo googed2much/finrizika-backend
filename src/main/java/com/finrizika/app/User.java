@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Data;
 
 // Enumerator class for roles.
 enum Role {
@@ -18,6 +19,7 @@ enum Role {
  * Entity for table "user".
  * paaiskinimai veliau...
  */
+@Data
 @Entity
 public class User {
 
@@ -34,6 +36,12 @@ public class User {
     @Column(length = 12, nullable = false, unique = false)
     private String telephone;
 
+    @Column(length = 50, nullable = false, unique = false)
+    private String fullname;
+
+    @Column(length = 11, nullable = false, unique = true)
+    private String personId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = false)
     private Role role;
@@ -41,48 +49,4 @@ public class User {
     public User() {
     }
 
-    // ID
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    // Email
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    // Password
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    // Telephone
-    public String getTelephone() {
-        return telephone;
-    }
-
-    public void setTelephone(String telephone) {
-        this.telephone = telephone;
-    }
-
-    // Role
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
 }

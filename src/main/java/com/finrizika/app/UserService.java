@@ -36,11 +36,13 @@ public class UserService {
     }
     // -----------------------------------------------------------------------
 
-    public void createUser(String email, String rawPassword, String telephone, Role role){
+    public void createUser(String email, String rawPassword, String telephone, String fullname, String personId, Role role){
         User user = new User();
         user.setEmail(email);
         user.setPassword(encoder.encode(rawPassword));
         user.setTelephone(telephone);
+        user.setFullname(fullname);
+        user.setPersonId(personId);
         user.setRole(role);
         userRepository.save(user);
     }

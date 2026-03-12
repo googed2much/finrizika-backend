@@ -5,7 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Data;
 
+@Data
 @Entity
 public class CompanyData {
 
@@ -36,70 +38,5 @@ public class CompanyData {
 
     public CompanyData() {
     }
-
-    // Getters and setters...
-
-    public Long getId(){
-        return this.id;
-    }
-
-    public void setId(Long id){
-        this.id = id;
-    }
-
-    public double getQuickLiquidityRatio() {
-        return quickLiquidityRatio;
-    }
-
-    public void setQuickLiquidityRatio(double quickLiquidityRatio) {
-        this.quickLiquidityRatio = quickLiquidityRatio;
-    }
-
-    public double getEquityRatio() {
-        return equityRatio;
-    }
-
-    public void setEquityRatio(double equityRatio) {
-        this.equityRatio = equityRatio;
-    }
-
-    public double getInterestCoverage() {
-        return interestCoverage;
-    }
-
-    public void setInterestCoverage(double interestCoverage) {
-        this.interestCoverage = interestCoverage;
-    }
-
-    public double getNetDebtRatio() {
-        return netDebtRatio;
-    }
-
-    public void setNetDebtRatio(double netDebtRatio) {
-        this.netDebtRatio = netDebtRatio;
-    }
-
-    public double getNetProfitability() {
-        return netProfitability;
-    }
-
-    public void setNetProfitability(double netProfitability) {
-        this.netProfitability = netProfitability;
-    }
-
-    public double getChangeInSalesRevenue() {
-        return changeInSalesRevenue;
-    }
-
-    public void setChangeInSalesRevenue(double changeInSalesRevenue) {
-        this.changeInSalesRevenue = changeInSalesRevenue;
-    }
-
-    public long getCompanyId() {
-        return this.companyId;
-    }
-
-    public void setCompanyId(long companyId) {
-        this.companyId = companyId;
-    }
+    
 }
