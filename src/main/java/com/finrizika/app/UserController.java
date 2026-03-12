@@ -43,6 +43,22 @@ public class UserController {
             this.role = user.getRole();
         }
     }
+
+    // GET request'as. Atiduoda dabartini sesijoje issaugota user.
+    @GetMapping("/get-current")
+    public ResponseEntity<?> getCurrentUser(HttpServletRequest request){
+        HttpSession session = request.getSession(false);
+        if(session == null) return ResponseEntity.notFound().build();
+
+        Long id = (Long) session.getAttribute("id");
+        if(id == null) return ResponseEntity.notFound().build();
+
+        Optional<User> userById = userService.getUserById(id);
+        if(!userById.isPresent()) return ResponseEntity.notFound().build();
+        User user = userById.get();
+        return ResponseEntity.ok(new UserForSending(user));
+    }
+
     // GET request'as. Atiduoda viska apie visus userius isskyrus slaptika.
     @GetMapping("/get")
     public ResponseEntity<?> getUsers(HttpServletRequest request){
