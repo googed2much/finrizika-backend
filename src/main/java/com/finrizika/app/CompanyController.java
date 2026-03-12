@@ -3,6 +3,8 @@ package com.finrizika.app;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/company")
 public class CompanyController {
@@ -81,10 +83,8 @@ public class CompanyController {
     // POST /api/company-info/create
     // -----------------------------------------------------------------------
     @PostMapping("/create")
-    public ResponseEntity<?> createCompanyInfo(@RequestBody RequestCreateCompanyInfo data) {
-
+    public ResponseEntity<?> createCompanyInfo(HttpServletRequest request, @RequestBody RequestCreateCompanyInfo data) {
         companyService.createCompany(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue());
-
         return ResponseEntity.ok("Company created successfully");
     }
 

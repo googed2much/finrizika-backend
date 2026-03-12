@@ -16,7 +16,6 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         if (path.startsWith("/api/users/login") ||
                 path.startsWith("/assets") ||
-                path.startsWith("/api/company-info") ||
                 path.equals("/login") ||
                 path.contains(".")) {
             return true;
