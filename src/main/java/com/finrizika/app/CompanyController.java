@@ -4,13 +4,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/company-info")
-public class CompanyInfoController {
+@RequestMapping("/api/company")
+public class CompanyController {
 
-    private final CompanyInfoService companyInfoService;
+    private final CompanyService companyService;
 
-    public CompanyInfoController(CompanyInfoService companyInfoService) {
-        this.companyInfoService = companyInfoService;
+    public CompanyController(CompanyService companyService) {
+        this.companyService = companyService;
     }
 
     // -----------------------------------------------------------------------
@@ -83,15 +83,9 @@ public class CompanyInfoController {
     @PostMapping("/create")
     public ResponseEntity<?> createCompanyInfo(@RequestBody RequestCreateCompanyInfo data) {
 
-        CompanyInfo info = companyInfoService.createCompanyInfo(
-                data.getQuickLiquidityRatio(),
-                data.getEquityRatio(),
-                data.getInterestCoverage(),
-                data.getNetDebtRatio(),
-                data.getNetProfitability(),
-                data.getChangeInSalesRevenue());
+        companyService.createCompany(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue());
 
-        return ResponseEntity.ok(info);
+        return ResponseEntity.ok("Company created successfully");
     }
 
 }

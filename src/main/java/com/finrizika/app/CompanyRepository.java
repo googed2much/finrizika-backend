@@ -2,5 +2,5 @@ package com.finrizika.app;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CompanyInfoRepository extends JpaRepository<CompanyInfo, Long> {
+public interface CompanyRepository extends JpaRepository<Company, Long> {
 }

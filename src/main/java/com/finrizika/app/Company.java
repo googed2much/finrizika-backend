@@ -7,7 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class CompanyInfo {
+public class Company {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +31,7 @@ public class CompanyInfo {
     @Column(nullable = false)
     private double changeInSalesRevenue;
 
-    public CompanyInfo() {
+    public Company() {
     }
 
     // Getters and setters...

@@ -1,8 +1,9 @@
 package com.finrizika.app;
 
+import java.util.List;
 import java.util.Optional;
-
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +22,23 @@ public class UserController {
     }
 
     // -----------------------------------------------------------------------
-    public static class RequestCreateUser {
+    @GetMapping("/get")
+    public ResponseEntity<?> getUsers(HttpServletRequest request){
+        HttpSession session = request.getSession(false);
+        if(session == null) return ResponseEntity.status(401).body("User not authorized");
+        Long userId = (Long) session.getAttribute("id");
+        if (userId == null) return ResponseEntity.status(401).body("User not authorized");
+        boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
+        if(!authorized) return ResponseEntity.status(401).body("User not authorized");
+
+        List<User> users = userService.getAllUsers();
+
+        return ResponseEntity.ok(users);
+    }
+    // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    public static class RequestCreateUser{
         private String email;
         private String password;
         private String telephone;
@@ -59,9 +76,15 @@ public class UserController {
 
     // POST request -> /api/users/create. Body su "email", "password", "telephone".
     @PostMapping(value = "/create")
-    public ResponseEntity<?> createUser(HttpServletRequest request, @RequestBody RequestCreateUser data) {
-        if (data.getEmail() == null || data.getPassword() == null || data.getTelephone() == null)
-            return ResponseEntity.badRequest().body("Missing parameters");
+    public ResponseEntity<?> createUser(HttpServletRequest request, @RequestBody RequestCreateUser data){
+        HttpSession session = request.getSession(false);
+        if(session == null) return ResponseEntity.status(401).body("User not authorized");
+        Long userId = (Long) session.getAttribute("id");
+        if (userId == null) return ResponseEntity.status(401).body("User not authorized");
+        boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
+        if(!authorized) return ResponseEntity.status(401).body("User not authorized");
+
+        if(data.getEmail() == null || data.getPassword() == null || data.getTelephone() == null) return ResponseEntity.badRequest().body("Missing parameters");
         userService.createUser(data.getEmail(), data.getPassword(), data.getTelephone(), Role.INVESTOR);
         return ResponseEntity.ok("User creation successful");
     }
@@ -109,7 +132,6 @@ public class UserController {
 
         HttpSession session = request.getSession(true);
         session.setAttribute("id", user.get().getId());
-        session.setAttribute("role", user.get().getRole());
         return ResponseEntity.ok("Login successful");
     }
     // -----------------------------------------------------------------------
