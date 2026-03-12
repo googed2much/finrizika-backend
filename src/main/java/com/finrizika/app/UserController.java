@@ -1,8 +1,9 @@
 package com.finrizika.app;
 
+import java.util.List;
 import java.util.Optional;
-
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,13 +13,29 @@ import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/users")
-public class UserController{
+public class UserController {
 
     private final UserService userService;
 
-    public UserController(UserService userService){
+    public UserController(UserService userService) {
         this.userService = userService;
     }
+
+    // -----------------------------------------------------------------------
+    @GetMapping("/get")
+    public ResponseEntity<?> getUsers(HttpServletRequest request){
+        HttpSession session = request.getSession(false);
+        if(session == null) return ResponseEntity.status(401).body("User not authorized");
+        Long userId = (Long) session.getAttribute("id");
+        if (userId == null) return ResponseEntity.status(401).body("User not authorized");
+        boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
+        if(!authorized) return ResponseEntity.status(401).body("User not authorized");
+
+        List<User> users = userService.getAllUsers();
+
+        return ResponseEntity.ok(users);
+    }
+    // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
     public static class RequestCreateUser{
@@ -26,36 +43,47 @@ public class UserController{
         private String password;
         private String telephone;
 
-        public RequestCreateUser(){
+        public RequestCreateUser() {
         }
 
         // Email
-        public String getEmail(){
+        public String getEmail() {
             return this.email;
         }
-        public void setEmail(String email){
+
+        public void setEmail(String email) {
             this.email = email;
         }
 
         // Password
-        public String getPassword(){
+        public String getPassword() {
             return this.password;
         }
-        public void setPassword(String password){
+
+        public void setPassword(String password) {
             this.password = password;
         }
 
         // Telephone
-        public String getTelephone(){
+        public String getTelephone() {
             return this.telephone;
         }
-        public void setTelephone(String telephone){
+
+        public void setTelephone(String telephone) {
             this.telephone = telephone;
         }
     }
+
     // POST request -> /api/users/create. Body su "email", "password", "telephone".
     @PostMapping(value = "/create")
     public ResponseEntity<?> createUser(HttpServletRequest request, @RequestBody RequestCreateUser data){
+        HttpSession session = request.getSession(false);
+        if(session == null) return ResponseEntity.status(401).body("User not authorized");
+        Long userId = (Long) session.getAttribute("id");
+        if (userId == null) return ResponseEntity.status(401).body("User not authorized");
+        boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
+        if(!authorized) return ResponseEntity.status(401).body("User not authorized");
+
         if(data.getEmail() == null || data.getPassword() == null || data.getTelephone() == null) return ResponseEntity.badRequest().body("Missing parameters");
         userService.createUser(data.getEmail(), data.getPassword(), data.getTelephone(), Role.INVESTOR);
         return ResponseEntity.ok("User creation successful");
@@ -63,42 +91,47 @@ public class UserController{
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
-    public static class RequestLoginUser{
+    public static class RequestLoginUser {
 
         private String email;
         private String password;
 
-        public RequestLoginUser(){
+        public RequestLoginUser() {
         }
 
         // Email
-        public String getEmail(){
+        public String getEmail() {
             return this.email;
         }
-        public void setEmail(String email){
+
+        public void setEmail(String email) {
             this.email = email;
         }
 
         // Password
-        public String getPassword(){
+        public String getPassword() {
             return this.password;
         }
-        public void setPassword(String password){
+
+        public void setPassword(String password) {
             this.password = password;
         }
 
     }
-    // POST request -> /api/users/login. Body su "email", "password". Perduoda COOKIE.
+
+    // POST request -> /api/users/login. Body su "email", "password". Perduoda
+    // COOKIE.
     @PostMapping(value = "/login")
-    public ResponseEntity<?> login(HttpServletRequest request, @RequestBody RequestLoginUser data){
-        if(data.getEmail() == null || data.getPassword() == null) return ResponseEntity.status(401).body("Incorrect request");
-        
+    public ResponseEntity<?> login(HttpServletRequest request, @RequestBody RequestLoginUser data) {
+        if (data.getEmail() == null || data.getPassword() == null)
+            return ResponseEntity.status(401).body("Incorrect request");
+
         Optional<User> user = userService.authenticate(data.getEmail(), data.getPassword());
-        if(!user.isPresent()) return ResponseEntity.status(401).body("Wrong email or password");
+        if (!user.isPresent())
+            return ResponseEntity.status(401).body("Wrong email or password");
 
         HttpSession session = request.getSession(true);
         session.setAttribute("id", user.get().getId());
-        session.setAttribute("role", user.get().getRole());
         return ResponseEntity.ok("Login successful");
     }
     // -----------------------------------------------------------------------
