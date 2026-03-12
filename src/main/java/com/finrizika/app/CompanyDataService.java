@@ -12,7 +12,7 @@ public class CompanyDataService{
         this.companyDataRepository = companyDataRepository;
     }
 
-    public void createCompanyData(double quickLiquidityRatio, double equityRatio, double interestCoverage, double netDebtRatio, double netProfitability, double changeInSalesRevenue) {
+    public void createCompanyData(double quickLiquidityRatio, double equityRatio, double interestCoverage, double netDebtRatio, double netProfitability, double changeInSalesRevenue, Long companyId) {
         CompanyData companyData = new CompanyData();
         companyData.setQuickLiquidityRatio(quickLiquidityRatio);
         companyData.setEquityRatio(equityRatio);
@@ -20,6 +20,7 @@ public class CompanyDataService{
         companyData.setNetDebtRatio(netDebtRatio);
         companyData.setNetProfitability(netProfitability);
         companyData.setChangeInSalesRevenue(changeInSalesRevenue);
+        companyData.setCompanyId(companyId);
 
         companyDataRepository.save(companyData);
     }

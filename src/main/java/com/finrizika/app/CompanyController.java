@@ -26,6 +26,7 @@ public class CompanyController {
         private double netDebtRatio;
         private double netProfitability;
         private double changeInSalesRevenue;
+        private Long companyId;
 
         public RequestCreateCompanyInfo() {
         }
@@ -77,6 +78,14 @@ public class CompanyController {
         public void setChangeInSalesRevenue(double changeInSalesRevenue) {
             this.changeInSalesRevenue = changeInSalesRevenue;
         }
+
+        public long getCompanyId() {
+            return companyId;
+        }
+
+        public void setCompanyId(Long companyId) {
+            this.companyId = companyId;
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -84,7 +93,7 @@ public class CompanyController {
     // -----------------------------------------------------------------------
     @PostMapping("/data/create")
     public ResponseEntity<?> createCompanyInfo(HttpServletRequest request, @RequestBody RequestCreateCompanyInfo data) {
-        companyDataService.createCompanyData(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue());
+        companyDataService.createCompanyData(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue(), data.getCompanyId());
         return ResponseEntity.ok("Company created successfully");
     }
 
