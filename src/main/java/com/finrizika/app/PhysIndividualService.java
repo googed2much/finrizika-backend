@@ -28,7 +28,7 @@ public class PhysIndividualService {
         return score;
     }
 
-    public double saveAndCalculate(double wage, double debt, double networth, double expenses, int age){
+    public double saveAndCalculate(double wage, double debt, double networth, double expenses, int age,int id,String name,String telephone){
 
         double score = calculateScore(wage, debt, networth, expenses, age);
 
@@ -39,9 +39,14 @@ public class PhysIndividualService {
         p.setExpenses(expenses);
         p.setAge(age);
         p.setScore(score);
-
+        p.setId(id);
+        p.setName(name);
+        p.setTelephone(telephone);
         repository.save(p);
 
         return score;
+    }
+    public Optional<PhysicalIndividual> findById(long id){
+        return repository.findById(id);
     }
 }

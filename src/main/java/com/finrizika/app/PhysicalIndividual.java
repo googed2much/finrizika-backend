@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 public class PhysicalIndividual {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     private double wage;
@@ -23,6 +22,9 @@ public class PhysicalIndividual {
     private int age;
 
     private double score;
+
+    private String name;
+    private String telephone;
 
     public PhysicalIndividual() {}
 
@@ -78,5 +80,19 @@ public class PhysicalIndividual {
     } 
     public void setScore(double score){
         this.score = score;
+    }
+
+    public String getName(){
+        return name;
+    } 
+    public void setName(String name){
+        this.name = name;
+    }
+
+    public String getTelephone(){
+        return telephone;
+    } 
+    public void setTelephone(String telephone){
+        this.telephone = telephone;
     }
 }
