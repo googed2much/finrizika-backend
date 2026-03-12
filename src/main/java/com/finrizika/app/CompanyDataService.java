@@ -25,7 +25,7 @@ public class CompanyDataService{
         companyDataRepository.save(companyData);
     }
 
-    public Optional<CompanyData> getCompanyById(long companyId) {
+    public Optional<CompanyData> getCompanyDataByCompanyId(long companyId) {
         return companyDataRepository.findByCompanyId(companyId);
     }
 }
