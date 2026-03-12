@@ -1,0 +1,97 @@
+package com.finrizika.app;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/company-info")
+public class CompanyInfoController {
+
+    private final CompanyInfoService companyInfoService;
+
+    public CompanyInfoController(CompanyInfoService companyInfoService) {
+        this.companyInfoService = companyInfoService;
+    }
+
+    // -----------------------------------------------------------------------
+    // DTO for creating CompanyInfo
+    // -----------------------------------------------------------------------
+    public static class RequestCreateCompanyInfo {
+
+        private double quickLiquidityRatio;
+        private double equityRatio;
+        private double interestCoverage;
+        private double netDebtRatio;
+        private double netProfitability;
+        private double changeInSalesRevenue;
+
+        public RequestCreateCompanyInfo() {
+        }
+
+        public double getQuickLiquidityRatio() {
+            return quickLiquidityRatio;
+        }
+
+        public void setQuickLiquidityRatio(double quickLiquidityRatio) {
+            this.quickLiquidityRatio = quickLiquidityRatio;
+        }
+
+        public double getEquityRatio() {
+            return equityRatio;
+        }
+
+        public void setEquityRatio(double equityRatio) {
+            this.equityRatio = equityRatio;
+        }
+
+        public double getInterestCoverage() {
+            return interestCoverage;
+        }
+
+        public void setInterestCoverage(double interestCoverage) {
+            this.interestCoverage = interestCoverage;
+        }
+
+        public double getNetDebtRatio() {
+            return netDebtRatio;
+        }
+
+        public void setNetDebtRatio(double netDebtRatio) {
+            this.netDebtRatio = netDebtRatio;
+        }
+
+        public double getNetProfitability() {
+            return netProfitability;
+        }
+
+        public void setNetProfitability(double netProfitability) {
+            this.netProfitability = netProfitability;
+        }
+
+        public double getChangeInSalesRevenue() {
+            return changeInSalesRevenue;
+        }
+
+        public void setChangeInSalesRevenue(double changeInSalesRevenue) {
+            this.changeInSalesRevenue = changeInSalesRevenue;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // POST /api/company-info/create
+    // -----------------------------------------------------------------------
+    @PostMapping("/create")
+    public ResponseEntity<?> createCompanyInfo(@RequestBody RequestCreateCompanyInfo data) {
+
+        CompanyInfo info = companyInfoService.createCompanyInfo(
+                data.getQuickLiquidityRatio(),
+                data.getEquityRatio(),
+                data.getInterestCoverage(),
+                data.getNetDebtRatio(),
+                data.getNetProfitability(),
+                data.getChangeInSalesRevenue());
+
+        return ResponseEntity.ok(info);
+    }
+
+}

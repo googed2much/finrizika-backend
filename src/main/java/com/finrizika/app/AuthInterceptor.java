@@ -10,13 +10,15 @@ import jakarta.servlet.http.HttpSession;
 public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api/users/login") || 
-            path.startsWith("/assets") ||
-            path.equals("/login") ||
-            path.contains(".")) {
+        if (path.startsWith("/api/users/login") ||
+                path.startsWith("/assets") ||
+                path.startsWith("/api/company-info") ||
+                path.equals("/login") ||
+                path.contains(".")) {
             return true;
         }
 

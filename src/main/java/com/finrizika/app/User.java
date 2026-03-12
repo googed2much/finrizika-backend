@@ -15,12 +15,12 @@ enum Role {
 }
 
 /*
-    Entity for table "user".
-    paaiskinimai veliau...
-*/
+ * Entity for table "user".
+ * paaiskinimai veliau...
+ */
 @Entity
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -38,7 +38,8 @@ public class User {
     @Column(nullable = false, unique = false)
     private Role role;
 
-    public User() {}
+    public User() {
+    }
 
     // ID
     public long getId() {
