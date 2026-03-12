@@ -1,9 +1,5 @@
 package com.finrizika.app;
 
-import java.util.Optional;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 @Service
 public class PhysIndividualService {
