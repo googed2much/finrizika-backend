@@ -82,7 +82,7 @@ public class CompanyController {
     // -----------------------------------------------------------------------
     // POST /api/company-info/create
     // -----------------------------------------------------------------------
-    @PostMapping("/create")
+    @PostMapping("/data/create")
     public ResponseEntity<?> createCompanyInfo(HttpServletRequest request, @RequestBody RequestCreateCompanyInfo data) {
         companyDataService.createCompanyData(data.getQuickLiquidityRatio(), data.getEquityRatio(), data.getInterestCoverage(), data.getNetDebtRatio(), data.getNetProfitability(), data.getChangeInSalesRevenue());
         return ResponseEntity.ok("Company created successfully");
