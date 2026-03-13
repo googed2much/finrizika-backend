@@ -3,10 +3,10 @@ package com.finrizika.app;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,9 +24,13 @@ public class UserController {
         this.userService = userService;
     }
 
+    private boolean isNullOrBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
     // -----------------------------------------------------------------------
     @Data
-    public static class UserForSending{
+    public static class UserDTO{
         private Long id;
         private String email;
         private String telephone;
@@ -34,7 +38,7 @@ public class UserController {
         private String personId;
         private Role role;
 
-        public UserForSending(User user){
+        public UserDTO(User user){
             this.id = user.getId();
             this.email = user.getEmail();
             this.telephone = user.getTelephone();
@@ -56,7 +60,7 @@ public class UserController {
         Optional<User> userById = userService.getUserById(id);
         if(!userById.isPresent()) return ResponseEntity.notFound().build();
         User user = userById.get();
-        return ResponseEntity.ok(new UserForSending(user));
+        return ResponseEntity.ok(new UserDTO(user));
     }
 
     // GET request'as. Atiduoda viska apie visus userius isskyrus slaptika.
@@ -70,8 +74,41 @@ public class UserController {
         if(!authorized) return ResponseEntity.status(401).body("User not authorized");
 
         List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users.stream().map(UserForSending::new).collect(Collectors.toList()));
+        return ResponseEntity.ok(users.stream().map(UserDTO::new).collect(Collectors.toList()));
     }
+    // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    @Data
+    public static class RequestUpdateUser{
+        private Long id;
+        private String email;
+        private String password;
+        private String telephone;
+        private String fullname;
+        private String personId;
+        private Role role;
+
+        public RequestUpdateUser() { }
+    }
+
+    // PUT requestas. Updatina user'io informacija
+    @PutMapping("/update")
+    public ResponseEntity<?> updateUser(HttpServletRequest request, @RequestBody RequestUpdateUser data){
+        HttpSession session = request.getSession(false);
+        Long id = (Long) session.getAttribute("id");
+        if(id == null) return ResponseEntity.status(401).body("Unauthorized access");
+        if(data.getId() == null) return ResponseEntity.badRequest().body("No user ID found");
+
+        boolean isAdmin = userService.authorize(id, Role.ADMINISTRATOR);
+        if(!isAdmin && !data.getId().equals(id)){
+            return ResponseEntity.status(401).body("Not authorized");
+        }
+    
+        userService.updateUser(data.getId(), data.getEmail(), data.getPassword(), data.getFullname(), data.getPersonId(), data.getRole());
+        return ResponseEntity.ok("Changed successfully");
+    }
+
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
@@ -84,8 +121,7 @@ public class UserController {
         private String personId;
         private Role role;
 
-        public RequestCreateUser() {
-        }
+        public RequestCreateUser() { }
     }
 
     // POST request -> /api/users/create.
@@ -117,7 +153,7 @@ public class UserController {
     // POST request -> /api/users/login. Body su "email", "password". Perduoda COOKIE.
     @PostMapping(value = "/login")
     public ResponseEntity<?> login(HttpServletRequest request, @RequestBody RequestLoginUser data) {
-        if (data.getEmail() == null || data.getPassword() == null)
+        if (isNullOrBlank(data.getEmail()) || isNullOrBlank(data.getPassword()))
             return ResponseEntity.status(401).body("Incorrect request");
 
         Optional<User> user = userService.authenticate(data.getEmail(), data.getPassword());

@@ -21,7 +21,7 @@ enum Role {
  */
 @Data
 @Entity
-public class User {
+public class User{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,7 +46,6 @@ public class User {
     @Column(nullable = false, unique = false)
     private Role role;
 
-    public User() {
-    }
+    public User() { }
 
 }
