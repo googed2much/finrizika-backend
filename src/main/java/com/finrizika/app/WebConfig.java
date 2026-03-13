@@ -15,9 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(authInterceptor)
-        .excludePathPatterns("/api/physical")
-        .excludePathPatterns("/api/physical/**");
+        registry.addInterceptor(authInterceptor);
     }
 }
 */
