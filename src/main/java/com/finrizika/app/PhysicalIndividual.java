@@ -3,7 +3,8 @@ package com.finrizika.app;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
-
+import java.util.Optional;
+import jakarta.persistence.Column;
 //fizinis asmuo isgalvoti atributai
 @Data
 @Entity
@@ -20,6 +21,8 @@ public class PhysicalIndividual {
 
     private String name;
     private String telephone;
+    @Column(nullable = false)
+    private boolean inPortfolio = false;
 
     public PhysicalIndividual() {}
 

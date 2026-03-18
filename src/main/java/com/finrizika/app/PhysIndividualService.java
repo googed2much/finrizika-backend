@@ -47,4 +47,19 @@ public class PhysIndividualService {
     public Optional<PhysicalIndividual> findById(long id){
         return repository.findById(id);
     }
+    public Optional<PhysicalIndividual> findByIdinPortfolio(long id){
+        return repository.findByIdAndInPortfolioTrue(id);
+    }
+    public boolean saveToPortfolio(long id){
+        Optional<PhysicalIndividual> person = repository.findById(id);
+    
+        if(person.isPresent()){
+            PhysicalIndividual entity = person.get();
+            entity.setInPortfolio(true);
+            repository.save(entity);
+            return true;
+        }
+    
+        return false;
+    }
 }

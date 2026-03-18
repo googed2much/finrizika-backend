@@ -54,12 +54,21 @@ public class PhysIndividualController {
     }
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable long id){
-        Optional<PhysicalIndividual> result = service.findById(id);
+        Optional<PhysicalIndividual> result = service.findByIdinPortfolio(id);
 
         if(result.isEmpty()){
             return ResponseEntity.notFound().build();
         }
 
         return ResponseEntity.ok(result.get());
+    }
+    @PostMapping("/save/{id}")
+    public ResponseEntity<?> saveToPortfolioById(@PathVariable long id){
+        boolean saved = service.saveToPortfolio(id);
+        if(!saved){
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok().build();
     }
 }
