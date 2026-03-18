@@ -50,10 +50,7 @@ public class UserController {
 
     // GET request'as. Atiduoda dabartini sesijoje issaugota user.
     @GetMapping("/get-current")
-    public ResponseEntity<?> getCurrentUser(HttpServletRequest request){
-        HttpSession session = request.getSession(false);
-        if(session == null) return ResponseEntity.notFound().build();
-
+    public ResponseEntity<?> getCurrentUser(HttpSession session){
         Long id = (Long) session.getAttribute("id");
         if(id == null) return ResponseEntity.notFound().build();
 
@@ -65,9 +62,7 @@ public class UserController {
 
     // GET request'as. Atiduoda viska apie visus userius isskyrus slaptika.
     @GetMapping("/get")
-    public ResponseEntity<?> getUsers(HttpServletRequest request){
-        HttpSession session = request.getSession(false);
-        if(session == null) return ResponseEntity.status(401).body("User not authorized");
+    public ResponseEntity<?> getUsers(HttpSession session){
         Long userId = (Long) session.getAttribute("id");
         if (userId == null) return ResponseEntity.status(401).body("User not authorized");
         boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
@@ -94,8 +89,7 @@ public class UserController {
 
     // PUT requestas. Updatina user'io informacija
     @PutMapping("/update")
-    public ResponseEntity<?> updateUser(HttpServletRequest request, @RequestBody RequestUpdateUser data){
-        HttpSession session = request.getSession(false);
+    public ResponseEntity<?> updateUser(HttpSession session, @RequestBody RequestUpdateUser data){
         Long id = (Long) session.getAttribute("id");
         if(id == null) return ResponseEntity.status(401).body("Unauthorized access");
         if(data.getId() == null) return ResponseEntity.badRequest().body("No user ID found");
@@ -126,9 +120,7 @@ public class UserController {
 
     // POST request -> /api/users/create.
     @PostMapping(value = "/create")
-    public ResponseEntity<?> createUser(HttpServletRequest request, @RequestBody RequestCreateUser data){
-        HttpSession session = request.getSession(false);
-        if(session == null) return ResponseEntity.status(401).body("User not authorized");
+    public ResponseEntity<?> createUser(HttpSession session, @RequestBody RequestCreateUser data){
         Long userId = (Long) session.getAttribute("id");
         if (userId == null) return ResponseEntity.status(401).body("User not authorized");
         boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
@@ -171,7 +163,6 @@ public class UserController {
     @GetMapping(value = "/logout")
     public ResponseEntity<?> logout(HttpServletRequest request){
         HttpSession session = request.getSession(false);
-        if(session == null) return ResponseEntity.badRequest().body("Not logged in");
         session.invalidate();
         return ResponseEntity.ok("Goodbye");
     }
