@@ -55,7 +55,7 @@ public class PhysIndividualController {
     }
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable long id){
-        Optional<PhysicalIndividual> result = service.findByIdinPortfolio(id);
+        Optional<PhysicalIndividual> result = service.findById(id);
 
         if(result.isEmpty()){
             return ResponseEntity.notFound().build();
