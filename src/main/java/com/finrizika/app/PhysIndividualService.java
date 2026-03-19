@@ -1,7 +1,7 @@
 package com.finrizika.app;
 
 import java.util.Optional;
-
+import java.util.List;
 import org.springframework.stereotype.Service;
 @Service
 public class PhysIndividualService {
@@ -49,6 +49,9 @@ public class PhysIndividualService {
     }
     public Optional<PhysicalIndividual> findByIdinPortfolio(long id){
         return repository.findByIdAndInPortfolioTrue(id);
+    }
+    public List<PhysicalIndividual> getList(){
+        return repository.findAll();
     }
     public boolean saveToPortfolio(long id){
         Optional<PhysicalIndividual> person = repository.findById(id);

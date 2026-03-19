@@ -1,6 +1,7 @@
 package com.finrizika.app;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,6 +62,15 @@ public class PhysIndividualController {
         }
 
         return ResponseEntity.ok(result.get());
+    }
+    @GetMapping("/list")
+    public ResponseEntity<?> getPhysicalList(){
+        List<PhysicalIndividual> result = service.getList();
+
+        if(result.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(result);
     }
     @PostMapping("/save/{id}")
     public ResponseEntity<?> saveToPortfolioById(@PathVariable long id){
