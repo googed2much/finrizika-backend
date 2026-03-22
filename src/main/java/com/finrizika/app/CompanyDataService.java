@@ -1,6 +1,8 @@
 package com.finrizika.app;
 
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -10,6 +12,44 @@ public class CompanyDataService {
 
     public CompanyDataService(CompanyDataRepository companyDataRepository) {
         this.companyDataRepository = companyDataRepository;
+    }
+
+    public List<CompanyDataResponseDTO> getByCompanyCode(String companyCode) {
+        List<CompanyData> matches = companyDataRepository.findByCompanyCode(companyCode);
+        List<CompanyDataResponseDTO> results = new ArrayList<>();
+
+        for (CompanyData companyData : matches) {
+            CompanyDataResponseDTO dto = new CompanyDataResponseDTO();
+            dto.setId(companyData.getId());
+            dto.setCompanyCode(companyData.getCompanyCode());
+            dto.setName(companyData.getName());
+            dto.setPhoneNumber(companyData.getPhoneNumber());
+            dto.setScore(companyData.getScore());
+            results.add(dto);
+        }
+
+        return results;
+    }
+
+    public List<CompanyDataResponseDTO> getAllCompanies() {
+        List<CompanyData> companies = companyDataRepository.findAll();
+        List<CompanyDataResponseDTO> results = new ArrayList<>();
+
+        for (CompanyData companyData : companies) {
+            CompanyDataResponseDTO dto = new CompanyDataResponseDTO();
+            dto.setId(companyData.getId());
+            dto.setCompanyCode(companyData.getCompanyCode());
+            dto.setName(companyData.getName());
+            dto.setPhoneNumber(companyData.getPhoneNumber());
+            dto.setScore(companyData.getScore());
+            results.add(dto);
+        }
+
+        return results;
+    }
+
+    public Optional<CompanyData> getCompanyDataByCompanyId(long id) {
+        return companyDataRepository.findById(id);
     }
 
     public int createCompanyData(CompanyDataCreateDTO input) {
@@ -36,10 +76,6 @@ public class CompanyDataService {
 
         companyDataRepository.save(companyData);
         return score;
-    }
-
-    public Optional<CompanyData> getCompanyDataByCompanyId(long id) {
-        return companyDataRepository.findById(id);
     }
 
     public double calculateQuickLiquidityRatio(double shortTermAssets, double inventory, double shortTermLiabilities) {
