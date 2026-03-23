@@ -34,9 +34,18 @@ public class CompanyData {
     private double changeInSalesRevenue;
 
     @Column(nullable = false)
-    private long companyId;
+    private String name;
+
+    @Column(nullable = false)
+    private String companyCode;
+
+    @Column(nullable = false)
+    private String phoneNumber;
+
+    @Column(nullable = false)
+    private double score;
 
     public CompanyData() {
     }
-    
+
 }

@@ -2,6 +2,7 @@ package com.finrizika.app;
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -45,5 +46,7 @@ public class PhysIndividualService {
     public Optional<PhysicalIndividual> findById(long id){
         return repository.findById(id);
     }
-
+    public List<PhysicalIndividual> getList(){
+        return repository.findAll();
+    }
 }

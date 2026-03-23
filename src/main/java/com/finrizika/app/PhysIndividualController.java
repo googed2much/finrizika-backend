@@ -2,6 +2,7 @@ package com.finrizika.app;
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +56,15 @@ public class PhysIndividualController {
         }
 
         return ResponseEntity.ok(result.get());
+    }
+    @GetMapping("/list")
+    public ResponseEntity<?> getPhysicalList(){
+        List<PhysicalIndividual> result = physicalService.getList();
+
+        if(result.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(result);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
