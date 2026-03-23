@@ -1,8 +1,9 @@
 package com.finrizika.app;
 
+import java.util.Date;
 import java.util.Optional;
-
 import org.springframework.stereotype.Service;
+
 @Service
 public class PhysIndividualService {
 
@@ -14,7 +15,6 @@ public class PhysIndividualService {
 
     //Fizinio asmens ivertinimas, isgalvoti daugikliai
     public double calculateScore(double wage, double debt, double networth, double expenses, int age){
-
         double score = 0;
 
         score += wage * 0.3;
@@ -26,40 +26,24 @@ public class PhysIndividualService {
         return score;
     }
 
-    public double saveAndCalculate(double wage, double debt, double networth, double expenses, int age,int id,String name,String telephone){
-
-        double score = calculateScore(wage, debt, networth, expenses, age);
-
+    public void saveProfile(long id, String fullname, String telephone, String country, String region, String city, int zipcode, Date birthday, Sex sex, HomeStatus homeStatus, long createById){
         PhysicalIndividual p = new PhysicalIndividual();
-        p.setWage(wage);
-        p.setDebt(debt);
-        p.setNetworth(networth);
-        p.setExpenses(expenses);
-        p.setAge(age);
-        p.setScore(score);
         p.setId(id);
-        p.setName(name);
+        p.setFullname(fullname);
         p.setTelephone(telephone);
+        p.setCountry(country);
+        p.setRegion(region);
+        p.setCity(city);
+        p.setZipcode(zipcode);
+        p.setBirhtday(birthday);
+        p.setSex(sex);
+        p.setHomeStatus(homeStatus);
+        p.setCreatedById(createById);
         repository.save(p);
-
-        return score;
     }
+
     public Optional<PhysicalIndividual> findById(long id){
         return repository.findById(id);
     }
-    public Optional<PhysicalIndividual> findByIdinPortfolio(long id){
-        return repository.findByIdAndInPortfolioTrue(id);
-    }
-    public boolean saveToPortfolio(long id){
-        Optional<PhysicalIndividual> person = repository.findById(id);
-    
-        if(person.isPresent()){
-            PhysicalIndividual entity = person.get();
-            entity.setInPortfolio(true);
-            repository.save(entity);
-            return true;
-        }
-    
-        return false;
-    }
+
 }

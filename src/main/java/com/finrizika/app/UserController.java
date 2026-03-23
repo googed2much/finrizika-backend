@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.Data;
 
 @RestController
@@ -22,10 +23,6 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
-    }
-
-    private boolean isNullOrBlank(String s) {
-        return s == null || s.isBlank();
     }
 
     // -----------------------------------------------------------------------
@@ -49,13 +46,12 @@ public class UserController {
     }
 
     // GET request'as. Atiduoda dabartini sesijoje issaugota user.
-    @GetMapping("/get-current")
+    @GetMapping("/getme")
     public ResponseEntity<?> getCurrentUser(HttpSession session){
         Long id = (Long) session.getAttribute("id");
-        if(id == null) return ResponseEntity.notFound().build();
-
         Optional<User> userById = userService.getUserById(id);
         if(!userById.isPresent()) return ResponseEntity.notFound().build();
+        
         User user = userById.get();
         return ResponseEntity.ok(new UserDTO(user));
     }
@@ -64,7 +60,6 @@ public class UserController {
     @GetMapping("/get")
     public ResponseEntity<?> getUsers(HttpSession session){
         Long userId = (Long) session.getAttribute("id");
-        if (userId == null) return ResponseEntity.status(401).body("User not authorized");
         boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
         if(!authorized) return ResponseEntity.status(401).body("User not authorized");
 
@@ -76,12 +71,19 @@ public class UserController {
     // -----------------------------------------------------------------------
     @Data
     public static class RequestUpdateUser{
+        @jakarta.validation.constraints.NotNull()
         private Long id;
+        @jakarta.validation.constraints.NotBlank()
         private String email;
+        @jakarta.validation.constraints.NotBlank()
         private String password;
+        @jakarta.validation.constraints.NotBlank()
         private String telephone;
+        @jakarta.validation.constraints.NotBlank()
         private String fullname;
+        @jakarta.validation.constraints.NotBlank()
         private String personId;
+        @jakarta.validation.constraints.NotNull()
         private Role role;
 
         public RequestUpdateUser() { }
@@ -89,12 +91,10 @@ public class UserController {
 
     // PUT requestas. Updatina user'io informacija
     @PutMapping("/update")
-    public ResponseEntity<?> updateUser(HttpSession session, @RequestBody RequestUpdateUser data){
+    public ResponseEntity<?> updateUser(HttpSession session, @Valid @RequestBody RequestUpdateUser data){
         Long id = (Long) session.getAttribute("id");
-        if(id == null) return ResponseEntity.status(401).body("Unauthorized access");
-        if(data.getId() == null) return ResponseEntity.badRequest().body("No user ID found");
-
         boolean isAdmin = userService.authorize(id, Role.ADMINISTRATOR);
+
         if(!isAdmin && !data.getId().equals(id)){
             return ResponseEntity.status(401).body("Not authorized");
         }
@@ -108,11 +108,17 @@ public class UserController {
     // -----------------------------------------------------------------------
     @Data
     public static class RequestCreateUser{
+        @jakarta.validation.constraints.NotBlank()
         private String email;
+        @jakarta.validation.constraints.NotBlank()
         private String password;
+        @jakarta.validation.constraints.NotBlank()
         private String telephone;
+        @jakarta.validation.constraints.NotBlank()
         private String fullname;
+        @jakarta.validation.constraints.NotBlank()
         private String personId;
+        @jakarta.validation.constraints.NotNull()
         private Role role;
 
         public RequestCreateUser() { }
@@ -120,13 +126,11 @@ public class UserController {
 
     // POST request -> /api/users/create.
     @PostMapping(value = "/create")
-    public ResponseEntity<?> createUser(HttpSession session, @RequestBody RequestCreateUser data){
+    public ResponseEntity<?> createUser(HttpSession session, @Valid @RequestBody RequestCreateUser data){
         Long userId = (Long) session.getAttribute("id");
-        if (userId == null) return ResponseEntity.status(401).body("User not authorized");
         boolean authorized = userService.authorize(userId, Role.ADMINISTRATOR);
         if(!authorized) return ResponseEntity.status(401).body("User not authorized");
 
-        if(data.getEmail() == null || data.getPassword() == null || data.getTelephone() == null || data.getFullname() == null || data.getPersonId() == null || data.getRole() == null) return ResponseEntity.badRequest().body("Missing parameters");
         userService.createUser(data.getEmail(), data.getPassword(), data.getTelephone(), data.getFullname(), data.getPersonId(), data.getRole());
         return ResponseEntity.ok("User creation successful");
     }
@@ -135,7 +139,9 @@ public class UserController {
     // -----------------------------------------------------------------------
     @Data
     public static class RequestLoginUser {
+        @jakarta.validation.constraints.NotBlank()
         private String email;
+        @jakarta.validation.constraints.NotBlank()
         private String password;
 
         public RequestLoginUser() {
@@ -144,10 +150,7 @@ public class UserController {
 
     // POST request -> /api/users/login. Body su "email", "password". Perduoda COOKIE.
     @PostMapping(value = "/login")
-    public ResponseEntity<?> login(HttpServletRequest request, @RequestBody RequestLoginUser data) {
-        if (isNullOrBlank(data.getEmail()) || isNullOrBlank(data.getPassword()))
-            return ResponseEntity.status(401).body("Incorrect request");
-
+    public ResponseEntity<?> login(HttpServletRequest request, @Valid @RequestBody RequestLoginUser data) {
         Optional<User> user = userService.authenticate(data.getEmail(), data.getPassword());
         if (!user.isPresent())
             return ResponseEntity.status(401).body("Wrong email or password");
