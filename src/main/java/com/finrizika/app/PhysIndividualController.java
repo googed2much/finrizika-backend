@@ -31,8 +31,6 @@ public class PhysIndividualController {
         private double networth;
         private double expenses;
         private int age;
-
-        public RatingRequest(){}
     }
 
     @PostMapping("/calculate")
@@ -56,6 +54,14 @@ public class PhysIndividualController {
         }
 
         return ResponseEntity.ok(result.get());
+    }
+    @GetMapping("/list")
+    public ResponseEntity<?> getPhysicalList(){
+        List<PhysicalIndividual> result = physicalService.getList();
+        if(result.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(result);
     }
     @GetMapping("/mylist")
     public ResponseEntity<?> getMyPhysicalList(HttpServletRequest request){
@@ -93,8 +99,6 @@ public class PhysIndividualController {
         private Sex sex;
         @jakarta.validation.constraints.NotNull()
         private HomeStatus homeStatus;
-
-        public SaveProfileRequest () {}
     }
 
     @PostMapping("/save")

@@ -47,6 +47,9 @@ public class PhysIndividualService {
     public Optional<PhysicalIndividual> findById(long id){
         return repository.findById(id);
     }
+    public List<PhysicalIndividual> getList(){
+        return repository.findAll();
+    }
     public List<PhysicalIndividual> getListByCreator(Long creatorId){
         return repository.findByCreatedById(creatorId);
     }

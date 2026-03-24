@@ -1,81 +1,35 @@
 package com.finrizika.app;
 
-import java.util.Optional;
-import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CompanyDataService {
+public class CompanyService {
 
-    private final CompanyDataRepository companyDataRepository;
+    private final CompanyRepository companyRepository;
 
-    public CompanyDataService(CompanyDataRepository companyDataRepository) {
-        this.companyDataRepository = companyDataRepository;
+    public CompanyService(CompanyRepository companyRepository) {
+        this.companyRepository = companyRepository;
     }
 
-    public List<CompanyDataResponseDTO> getByCompanyCode(String companyCode) {
-        List<CompanyData> matches = companyDataRepository.findByCompanyCode(companyCode);
-        List<CompanyDataResponseDTO> results = new ArrayList<>();
-
-        for (CompanyData companyData : matches) {
-            CompanyDataResponseDTO dto = new CompanyDataResponseDTO();
-            dto.setId(companyData.getId());
-            dto.setCompanyCode(companyData.getCompanyCode());
-            dto.setName(companyData.getName());
-            dto.setPhoneNumber(companyData.getPhoneNumber());
-            dto.setScore(companyData.getScore());
-            results.add(dto);
-        }
-
-        return results;
+    public List<Company> getByCompanyCode(Long companyCode) {
+        List<Company> matches = companyRepository.findByCode(companyCode);
+        return matches;
     }
 
-    public List<CompanyDataResponseDTO> getAllCompanies() {
-        List<CompanyData> companies = companyDataRepository.findAll();
-        List<CompanyDataResponseDTO> results = new ArrayList<>();
-
-        for (CompanyData companyData : companies) {
-            CompanyDataResponseDTO dto = new CompanyDataResponseDTO();
-            dto.setId(companyData.getId());
-            dto.setCompanyCode(companyData.getCompanyCode());
-            dto.setName(companyData.getName());
-            dto.setPhoneNumber(companyData.getPhoneNumber());
-            dto.setScore(companyData.getScore());
-            results.add(dto);
-        }
-
-        return results;
+    public List<Company> getAllCompanies() {
+        List<Company> companies = companyRepository.findAll();
+        return companies;
     }
 
-    public Optional<CompanyData> getCompanyDataByCompanyId(long id) {
-        return companyDataRepository.findById(id);
-    }
-
-    public int createCompanyData(CompanyDataCreateDTO input) {
-        CompanyData companyData = new CompanyData();
-        double ebit = calculateEBIT(input.getNetProfit(), input.getInterest(), input.getTaxes());
-
-        companyData.setQuickLiquidityRatio(calculateQuickLiquidityRatio(input.getShortTermAssets(),
-                input.getInventory(), input.getShortTermLiabilities()));
-        companyData.setEquityRatio(calculateEquityRatio(input.getEquity(), input.getTotalAssets()));
-        companyData.setInterestCoverage(calculateInterestCoverage(ebit, input.getInterestExpenses()));
-        companyData.setNetDebtRatio(calculateNetDebtRatio(input.getFinancialLiabilities(), input.getCash(), ebit,
-                input.getDepreciation(), input.getAmortization()));
-        companyData.setNetProfitability(calculateNetProfitability(input.getNetProfit(), input.getSalesRevenue()));
-        companyData.setChangeInSalesRevenue(input.getChangeInSalesRevenue());
-        companyData.setName(input.getName());
-        companyData.setCompanyCode(input.getCompanyCode());
-        companyData.setPhoneNumber(input.getPhoneNumber());
-
-        int score = calculateScore(companyData.getQuickLiquidityRatio(), companyData.getEquityRatio(),
-                companyData.getInterestCoverage(), companyData.getNetDebtRatio(), companyData.getNetProfitability(),
-                companyData.getChangeInSalesRevenue());
-
-        companyData.setScore(score);
-
-        companyDataRepository.save(companyData);
-        return score;
+    public void createCompany(Long code, String owner, String telephone, String email, Long createdById) {
+        Company company = new Company();
+        company.setCode(code);
+        company.setOwner(owner);
+        company.setTelephone(telephone);
+        company.setEmail(email);
+        company.setCreatedById(createdById);
+        companyRepository.save(company);
     }
 
     public double calculateQuickLiquidityRatio(double shortTermAssets, double inventory, double shortTermLiabilities) {
