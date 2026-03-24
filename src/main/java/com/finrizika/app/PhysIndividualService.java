@@ -27,16 +27,17 @@ public class PhysIndividualService {
         return score;
     }
 
-    public void saveProfile(long id, String fullname, String telephone, String country, String region, String city, int zipcode, Date birthday, Sex sex, HomeStatus homeStatus, long createById){
+    public void saveProfile(long id, String fullname, String telephone, String email, String country, String region, String city, String zipcode, Date birthday, Sex sex, HomeStatus homeStatus, long createById){
         PhysicalIndividual p = new PhysicalIndividual();
         p.setId(id);
         p.setFullname(fullname);
         p.setTelephone(telephone);
+        p.setEmail(email);
         p.setCountry(country);
         p.setRegion(region);
         p.setCity(city);
         p.setZipcode(zipcode);
-        p.setBirhtday(birthday);
+        p.setBirthday(birthday);
         p.setSex(sex);
         p.setHomeStatus(homeStatus);
         p.setCreatedById(createById);
@@ -46,7 +47,7 @@ public class PhysIndividualService {
     public Optional<PhysicalIndividual> findById(long id){
         return repository.findById(id);
     }
-    public List<PhysicalIndividual> getList(){
-        return repository.findAll();
+    public List<PhysicalIndividual> getListByCreator(Long creatorId){
+        return repository.findByCreatedById(creatorId);
     }
 }

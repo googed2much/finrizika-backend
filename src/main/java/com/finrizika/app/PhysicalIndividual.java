@@ -15,10 +15,9 @@ enum HomeStatus{
     NONE,
     RENTING,
     MORTGAGE,
-    OWNS
+    OWNER
 }
 
-//fizinis asmuo isgalvoti atributai
 @Data
 @Entity
 public class PhysicalIndividual {
@@ -27,11 +26,12 @@ public class PhysicalIndividual {
     private long id;
     private String fullname;
     private String telephone;
+    private String email;
     private String country;
     private String region;
     private String city;
-    private int zipcode;
-    private Date birhtday;
+    private String zipcode;
+    private Date birthday;
     private Sex sex;
     private HomeStatus homeStatus;
     private long createdById;

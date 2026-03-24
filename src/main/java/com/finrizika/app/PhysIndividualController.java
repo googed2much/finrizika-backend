@@ -57,9 +57,10 @@ public class PhysIndividualController {
 
         return ResponseEntity.ok(result.get());
     }
-    @GetMapping("/list")
-    public ResponseEntity<?> getPhysicalList(){
-        List<PhysicalIndividual> result = physicalService.getList();
+    @GetMapping("/mylist")
+    public ResponseEntity<?> getMyPhysicalList(HttpServletRequest request){
+        Long userId = (Long) request.getSession().getAttribute("id");
+        List<PhysicalIndividual> result = physicalService.getListByCreator(userId);
 
         if(result.isEmpty()){
             return ResponseEntity.notFound().build();
@@ -77,15 +78,17 @@ public class PhysIndividualController {
         @jakarta.validation.constraints.NotNull()
         private String telephone;
         @jakarta.validation.constraints.NotNull()
+        private String email;
+        @jakarta.validation.constraints.NotNull()
         private String country;
         @jakarta.validation.constraints.NotNull()
         private String region;
         @jakarta.validation.constraints.NotNull()
         private String city;
         @jakarta.validation.constraints.NotNull()
-        private int zipcode;
+        private String zipcode;
         @jakarta.validation.constraints.NotNull()
-        private Date birhtday;
+        private Date birthday;
         @jakarta.validation.constraints.NotNull()
         private Sex sex;
         @jakarta.validation.constraints.NotNull()
@@ -99,16 +102,17 @@ public class PhysIndividualController {
         long id = data.getId();
         String fullname = data.getFullname();
         String telephone = data.getTelephone();
+        String email = data.getEmail();
         String country = data.getCountry();
         String region = data.getRegion();
         String city = data.getCity();
-        int zipcode = data.getZipcode();
-        Date birthday = data.getBirhtday();
+        String zipcode = data.getZipcode();
+        Date birthday = data.getBirthday();
         Sex sex = data.getSex();
         HomeStatus homeStatus = data.getHomeStatus();
         long createdById = (long) request.getSession().getAttribute("id");
 
-        physicalService.saveProfile(id, fullname, telephone, country, region, city, zipcode, birthday, sex, homeStatus, createdById);
+        physicalService.saveProfile(id, fullname, telephone, email, country, region, city, zipcode, birthday, sex, homeStatus, createdById);
 
         return ResponseEntity.ok(null);
     }
