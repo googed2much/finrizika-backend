@@ -27,7 +27,7 @@ public class CompanyController {
     // POST /api/company/create
     // -----------------------------------------------------------------------
     @Data
-    public class CompanyDataCreateDTO {
+    public static class CompanyDataCreateDTO {
         @jakarta.validation.constraints.NotNull()
         private Long code;
         @jakarta.validation.constraints.NotBlank()
@@ -53,7 +53,7 @@ public class CompanyController {
     // GET /api/company/get
     // -----------------------------------------------------------------------
     @Data
-    public class CompanyDTO {
+    public static class CompanyDTO {
         private Long code;
         private String owner;
         private String telephone;
@@ -64,7 +64,7 @@ public class CompanyController {
             this.code = company.getCode();
             this.owner = company.getOwner();
             this.telephone = company.getTelephone();
-            this.email = company.getTelephone();
+            this.email = company.getEmail();
         }
     }
 
@@ -75,7 +75,7 @@ public class CompanyController {
     }
     
     @GetMapping("/get/{code}")
-    public ResponseEntity<?> getCompanyByCompanyCode(@NotBlank @Size(min = 1) @PathVariable Long code) {
+    public ResponseEntity<?> getCompanyByCompanyCode(@PathVariable Long code) {
         List<Company> results = companyDataService.getByCompanyCode(code);
         return ResponseEntity.ok(results.stream().map(CompanyDTO::new).collect(Collectors.toList()));
     }
