@@ -65,7 +65,7 @@ public class UserService {
 
     // -----------------------------------------------------------------------
     public void updateUser(Long id, String email, String password, String fullname, String personId, Role role){
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found: " + id));;
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found: " + id));
 
         if(hasValue(email)) user.setEmail(email);
         if(hasValue(password)) user.setPassword(encoder.encode(password));

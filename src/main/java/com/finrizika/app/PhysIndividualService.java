@@ -44,7 +44,13 @@ public class PhysIndividualService {
         repository.save(p);
     }
 
-    public Optional<PhysicalIndividual> findById(long id){
+    public void updateProfile(long id, String fullname, String telephone, String email, String country, String region, String city, String zipcode, Date birthday, Sex sex, HomeStatus homeStatus){
+        PhysicalIndividual result = repository.findById(id).orElseThrow(() -> new RuntimeException("Individual not found: " + id));
+
+
+    }
+
+    public Optional<PhysicalIndividual> getById(long id){
         return repository.findById(id);
     }
     public List<PhysicalIndividual> getList(){

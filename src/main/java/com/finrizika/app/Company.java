@@ -11,6 +11,7 @@ public class Company {
     @Id
     private Long code;
 
+    private String name;
     private String owner;
     private String telephone;
     private String email;

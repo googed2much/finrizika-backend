@@ -2,13 +2,10 @@ package com.finrizika.app;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import com.finrizika.app.UserController.UserDTO;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,24 +25,27 @@ public class CompanyController {
     // -----------------------------------------------------------------------
     @Data
     public static class CompanyDataCreateDTO {
-        @jakarta.validation.constraints.NotNull()
+        @NotNull()
         private Long code;
-        @jakarta.validation.constraints.NotBlank()
+        @NotBlank()
+        private String name;
+        @NotBlank()
         private String owner;
-        @jakarta.validation.constraints.NotBlank()
+        @NotBlank()
         private String telephone;
-        @jakarta.validation.constraints.NotBlank()
+        @NotBlank()
         private String email;
     }
 
     @PostMapping("/create")
     public ResponseEntity<?> createCompanyData(HttpServletRequest request, @Valid @RequestBody CompanyDataCreateDTO data) {
         Long code = data.getCode();
+        String name = data.getName();
         String owner = data.getOwner();
         String telephone = data.getTelephone();
         String email = data.getEmail();
         Long createdById = (Long) request.getSession().getAttribute("id");
-        companyDataService.createCompany(code, owner, telephone, email, createdById);
+        companyDataService.createCompany(code, name, owner, telephone, email, createdById);
         return ResponseEntity.ok("Created successfully");
     }
 
@@ -55,6 +55,7 @@ public class CompanyController {
     @Data
     public static class CompanyDTO {
         private Long code;
+        private String name;
         private String owner;
         private String telephone;
         private String email;
@@ -62,6 +63,7 @@ public class CompanyController {
         CompanyDTO() {}
         CompanyDTO(Company company) {
             this.code = company.getCode();
+            this.name = company.getName();
             this.owner = company.getOwner();
             this.telephone = company.getTelephone();
             this.email = company.getEmail();

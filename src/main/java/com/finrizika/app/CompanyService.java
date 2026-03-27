@@ -22,9 +22,10 @@ public class CompanyService {
         return companies;
     }
 
-    public void createCompany(Long code, String owner, String telephone, String email, Long createdById) {
+    public void createCompany(Long code, String name, String owner, String telephone, String email, Long createdById) {
         Company company = new Company();
         company.setCode(code);
+        company.setName(name);
         company.setOwner(owner);
         company.setTelephone(telephone);
         company.setEmail(email);
