@@ -1,6 +1,6 @@
 ADMIN:
 email: admin@ktu.lt
-password: bubis
+password: admin
 
 INVESTOR:
 email: investor@ktu.lt
