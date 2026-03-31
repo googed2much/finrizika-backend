@@ -74,10 +74,10 @@ public class PersonService {
         List<Credit> creditHistory = person.getCreditHistory();
         BigDecimal totalDebt = creditHistory.stream().map(Credit::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal dti = totalDebt.divide(currentSalary);
-        if(dti.compareTo(BigDecimal.valueOf(0.5f)) == -1) return 0;
-        else if(dti.compareTo(BigDecimal.valueOf(0.3f)) == -1 || dti.compareTo(BigDecimal.valueOf(0.3f)) == 0) return 15;
-        else return 30;
+        BigDecimal dti = totalDebt.divide(currentSalary, 10, RoundingMode.HALF_UP);
+        if(dti.compareTo(BigDecimal.valueOf(0.5)) > 0) return 0;
+        else if(dti.compareTo(BigDecimal.valueOf(0.3)) < 0) return 30;
+        else return 15;
     }
 
     private Integer latenessScoring(Person person){
@@ -93,19 +93,16 @@ public class PersonService {
 
     private Integer salaryScoring(Person person){
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
-        if(currentSalary.compareTo(BigDecimal.valueOf(1000)) == -1) return 0;
-        else if(currentSalary.compareTo(BigDecimal.valueOf(2000)) == -1) return 10;
-        else return 20;
+        if(currentSalary.compareTo(BigDecimal.valueOf(1000)) < 0) return 0;
+        else if(currentSalary.compareTo(BigDecimal.valueOf(2000)) > 0) return 20;
+        else return 10;
     }
 
     private Integer lengthScoring(Person person){
         List<Employment> currentJobs = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).toList();
         OptionalLong biggestLength = currentJobs.stream().mapToLong(job -> ChronoUnit.YEARS.between(job.getStartDate(), LocalDate.now())).max();
-        if(biggestLength.isEmpty()) return 0;
-
         if(biggestLength.getAsLong() < 2) return 15;
         else return 30;
-
     }
 
     public Integer calculateScore(Long personId){
@@ -114,7 +111,9 @@ public class PersonService {
         if(!checkEmployment(person)) return 0;
 
         Integer score = 0;
-        score += dtiScoring(person);
+        Integer dtiScore = dtiScoring(person);
+        if(dtiScore == 0) return 0;
+        score += dtiScore;
         score += latenessScoring(person);
         score += salaryScoring(person);
         score += lengthScoring(person);
