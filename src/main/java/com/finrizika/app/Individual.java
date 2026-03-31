@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +23,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
+@SQLRestriction("deleted = false")
 public abstract class Individual {
 
     @Id
@@ -45,7 +47,7 @@ public abstract class Individual {
 
     private LocalDateTime deletedAt;
 
-    @Column(nullable = false, columnDefinition="default false")
+    @Column(nullable = false, columnDefinition="boolean default false")
     private boolean deleted = false;
 
     public void softDelete() {

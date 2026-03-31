@@ -26,14 +26,14 @@ public class CreditApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "individual_id")
-    private Individual individual;
     
     private BigDecimal requestedAmount;
     private LocalDate appliedDate;
     private ApplicationStatus status;
+
+    @ManyToOne
+    @JoinColumn(name = "individual_id")
+    private Individual individual;
 
     public CreditApplication(){}
 

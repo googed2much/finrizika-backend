@@ -2,7 +2,8 @@ package com.finrizika.app;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import com.finrizika.app.PersonController.EmploymentDTO;
+
+import com.finrizika.app.PersonController.CreateEmploymentDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -52,7 +53,7 @@ public class Employment {
     // Factories
     // --------------------------------------------------
 
-    public static Employment from(EmploymentDTO dto){
+    public static Employment from(CreateEmploymentDTO dto){
         Employment employment = new Employment();
         employment.setSalary(dto.getSalary());
         employment.setPost(dto.getPost());

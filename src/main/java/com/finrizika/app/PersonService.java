@@ -4,14 +4,18 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import com.finrizika.app.PersonController.CreateCreditApplicationDTO;
 import com.finrizika.app.PersonController.CreateCreditDTO;
-import com.finrizika.app.PersonController.EmploymentDTO;
+import com.finrizika.app.PersonController.CreateEmploymentDTO;
+import com.finrizika.app.PersonController.ImportCreditDTO;
+import com.finrizika.app.PersonController.ImportPaymentDTO;
 import com.finrizika.app.PersonController.PersonDTO;
+import com.finrizika.app.PersonController.UpdateCreditApplicationDTO;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
@@ -59,9 +63,22 @@ public class PersonService {
         paymentRepository.saveAll(schedule);
     }
 
-    private double calculateScore(){
-        // TODO: CREATE A FORMULA
-        return 0.f;
+    private Long calculateScore(Long personId){
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
+
+        Long score = 0l;
+
+        List<Credit> creditHistory = person.getCreditHistory();
+        BigDecimal totalDebt = creditHistory.stream().map(Credit::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        Comparator<Employment> compare = Comparator.comparing(Employment::getStartDate).reversed();
+        BigDecimal currentSalary = person.getEmploymentHistory().stream().sorted(compare).findFirst().map(Employment::getSalary).orElse(BigDecimal.ZERO);
+        BigDecimal dti = totalDebt.divide(currentSalary);
+        
+        // TODO: DTI scoring
+        // TODO: Salary
+        // TODO: missed
+
+        return score;
     }
 
     // ---------------------------------------------------------
@@ -69,23 +86,57 @@ public class PersonService {
     public Person getById(Long id){
         return personRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Person not found."));
     }
+
     public List<Person> getList(){
         return personRepository.findAll();
     }
 
-    // ---------------------------------------------------------
+    public List<Employment> getEmploymentList(Long personId){
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        return person.getEmploymentHistory();
+    }
 
+    public List<CreditApplication> getApplicationList(Long personId){
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        return person.getCreditApplicationHistory();
+    }
+
+    public List<Credit> getCreditsFromPerson(Long personId){
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        return person.getCreditHistory();
+    }
+
+    public List<Payment> getPaymentsFromCredit(Long creditId) {
+        Credit credit = creditRepository.findById(creditId).orElseThrow(() -> new EntityNotFoundException("Credit not found."));
+        return credit.getPayments();
+    }
+
+    // ---------------------------------------------------------
+    
     public Long savePerson(PersonDTO dto){
         Person p = Person.from(dto);
+        if (personRepository.existsByCitizenId(p.getCitizenId())) {
+            return null;
+        }
         Person saved = personRepository.save(p);
         return saved.getId();
     }
 
-    public Long saveEmployment(EmploymentDTO dto){
+    public Long saveEmployment(CreateEmploymentDTO dto){
         Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         Employment employment = Employment.from(dto);
         employment.setPerson(person);
         Employment saved = employmentRepository.save(employment);
+        return saved.getId();
+    }
+
+    public Long createCreditApplication(CreateCreditApplicationDTO dto){
+        Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        CreditApplication creditApplication = CreditApplication.from(dto);
+        creditApplication.setAppliedDate(LocalDate.now());
+        creditApplication.setStatus(ApplicationStatus.PENDING);
+        creditApplication.setIndividual(person);
+        CreditApplication saved = creditApplicationRepository.save(creditApplication);
         return saved.getId();
     }
 
@@ -101,13 +152,19 @@ public class PersonService {
         return saved.getId();
     }
 
-    public Long createCreditApplication(CreateCreditApplicationDTO dto){
+    public Long importCredit(ImportCreditDTO dto){
         Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
-        CreditApplication creditApplication = CreditApplication.from(dto);
-        creditApplication.setAppliedDate(LocalDate.now());
-        creditApplication.setStatus(ApplicationStatus.PENDING);
-        creditApplication.setIndividual(person);
-        CreditApplication saved = creditApplicationRepository.save(creditApplication);
+        Credit credit = Credit.from(dto);
+        credit.setIndividual(person);
+        Credit saved = creditRepository.save(credit);
+        return saved.getId();
+    }
+
+    public Long importPayment(ImportPaymentDTO dto){
+        Credit credit = creditRepository.findById(dto.getCreditId()).orElseThrow(() -> new EntityNotFoundException("Credit not found."));
+        Payment payment = Payment.from(dto);
+        payment.setCredit(credit);
+        Payment saved = paymentRepository.save(payment);
         return saved.getId();
     }
 
@@ -129,6 +186,13 @@ public class PersonService {
         return updated.getId();
     }
 
+    public Long updateApplicationStatus(UpdateCreditApplicationDTO dto){
+        CreditApplication application = creditApplicationRepository.findById(dto.getId()).orElseThrow(() -> new EntityNotFoundException("Credit application not found."));
+        application.setStatus(dto.getStatus());
+        CreditApplication saved = creditApplicationRepository.save(application);
+        return saved.getId();
+    }
+
     public Long makePayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("Payment not found."));
         LocalDate today = LocalDate.now();
@@ -146,4 +210,17 @@ public class PersonService {
         Person deleted = personRepository.save(person);
         return deleted.getId();
     }
+
+    public Long deleteCredit(Long creditId){
+        Credit credit = creditRepository.findById(creditId).orElseThrow(() -> new EntityNotFoundException("Credit not found."));
+        credit.softDelete();
+        Credit deleted = creditRepository.save(credit);
+        return deleted.getId();
+    }
+
+    public void deleteEmployment(Long employmentId) {
+        Employment employment = employmentRepository.findById(employmentId).orElseThrow(() -> new EntityNotFoundException("Employment not found."));
+        employmentRepository.delete(employment);
+    }
+
 }

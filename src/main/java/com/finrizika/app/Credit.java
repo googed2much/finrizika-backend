@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.SQLRestriction;
 import com.finrizika.app.PersonController.CreateCreditDTO;
+import com.finrizika.app.PersonController.ImportCreditDTO;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +36,7 @@ enum CreditType{
 @Getter
 @Setter
 @Entity
+@SQLRestriction("deleted = false")
 public class Credit {
 
     @Id
@@ -67,6 +70,13 @@ public class Credit {
     @OneToMany(mappedBy = "credit", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Payment> payments = new ArrayList<Payment>();
 
+    private boolean deleted = false;
+    private LocalDate deletedAt;
+    public void softDelete(){
+        this.deleted = true;
+        this.deletedAt = LocalDate.now();
+    }
+
     public Credit(){}
 
     // ---------------------------------------------------
@@ -76,7 +86,19 @@ public class Credit {
     public static Credit from(CreateCreditDTO dto){
         Credit credit = new Credit();
         credit.setAmount(dto.getAmount());
+        credit.setIssuedDate(dto.getIssuedDate());
         credit.setInterestRate(dto.getInterestRate());
+        credit.setType(dto.getType());
+        return credit;
+    }
+
+    public static Credit from(ImportCreditDTO dto){
+        Credit credit = new Credit();
+        credit.setAmount(dto.getAmount());
+        credit.setInterestRate(dto.getInterestRate());
+        credit.setIssuedDate(dto.getIssuedDate());
+        credit.setDueDate(dto.getDueDate());
+        credit.setStatus(dto.getStatus());
         credit.setType(dto.getType());
         return credit;
     }

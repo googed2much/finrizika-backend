@@ -11,6 +11,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,9 +25,12 @@ enum Sex{
 @Getter
 @Setter
 @Entity
+@Table(
+    uniqueConstraints = @UniqueConstraint(columnNames = {"citizenId", "deleted"})
+)
 public class Person extends Individual{
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String citizenId;
 
     @Column(nullable = false)

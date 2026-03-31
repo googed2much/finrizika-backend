@@ -40,7 +40,7 @@ public class User{
     private String fullname;
 
     @Column(length = 11, nullable = false, unique = true)
-    private String personId;
+    private String citizenId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = false)

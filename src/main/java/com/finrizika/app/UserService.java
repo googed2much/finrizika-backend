@@ -38,7 +38,7 @@ public class UserService {
         user.setPassword(encoder.encode(dto.getPassword()));
         user.setTelephone(dto.getTelephone());
         user.setFullname(dto.getFullname());
-        user.setPersonId(dto.getPersonId());
+        user.setCitizenId(dto.getCitizenId());
         user.setRole(dto.getRole());
         User saved = userRepository.save(user);
         return saved.getId();
@@ -61,7 +61,7 @@ public class UserService {
         user.setPassword(encoder.encode(dto.getPassword()));
         user.setTelephone(dto.getTelephone());
         user.setFullname(dto.getFullname());
-        user.setPersonId(dto.getPersonId());
+        user.setCitizenId(dto.getCitizenId());
         user.setRole(dto.getRole());
         User saved = userRepository.save(user);
         return saved.getId();
