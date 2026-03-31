@@ -290,6 +290,11 @@ public class PersonController {
     // GET REQUESTS FOR GETTING DATA
     // ----------------------------------------------------------------------------------------------
 
+    /**
+     * Gets one person's data by ID.
+     * @param id Person's id.
+     * @return JSON of a single person's data. NotFound response if the person is not found.
+     */
     @GetMapping("/get/{id}")
     public ResponseEntity<?> getPersonById(@PathVariable Long id){
         try{
@@ -301,6 +306,10 @@ public class PersonController {
         }
     }
 
+    /**
+     * Gets a list of all people in the database.
+     * @return JSON array of people's data.
+     */
     @GetMapping("/get/list")
     public ResponseEntity<?> getList(){
         List<Person> result = personService.getList();
@@ -309,6 +318,11 @@ public class PersonController {
         }).toList());
     }
 
+    /**
+     * Gets the employment list of the person.
+     * @param id Person's id.
+     * @return JSON array of jobs' data. NotFound response if the person is not found.
+     */
     @GetMapping("/get/{id}/employment")
     public ResponseEntity<?> getPersonEmployment(@PathVariable Long id){
         List<Employment> result = personService.getEmploymentList(id);
@@ -317,6 +331,11 @@ public class PersonController {
         }).toList());
     }
 
+    /**
+     * Gets all person's applications and their data.
+     * @param id Person's id.
+     * @return JSON array of applications' data. NotFound response if the person is not found.
+     */
     @GetMapping("/get/{id}/applications")
     public ResponseEntity<?> getPersonApplications(@PathVariable Long id){
         List<CreditApplication> result = personService.getApplicationList(id);
@@ -325,6 +344,11 @@ public class PersonController {
         }).toList());
     }
 
+    /**
+     * Gets all person's credits.
+     * @param id Person's id.
+     * @return JSON array of credits' data. NotFound response if the person is not found.
+     */
     @GetMapping("/get/{id}/credits")
     public ResponseEntity<?> getPersonCredits(@PathVariable Long id){
         try{
@@ -338,6 +362,11 @@ public class PersonController {
         }
     }
 
+    /**
+     * Gets all payment data of the credit.
+     * @param id Credit's id.
+     * @return JSON array of payments' data. NotFound response if the person is not found.
+     */
     @GetMapping("/get/credits/{id}/payments")
     public ResponseEntity<?> getCreditPayments(@PathVariable Long id){
         try{
@@ -351,6 +380,11 @@ public class PersonController {
         }
     }
 
+    /**
+     * Gets a person's score. Be sure to fill out all of their data, or else it will be just 0.
+     * @param id Person's id.
+     * @return Plain text of the person's score.
+     */
     @GetMapping("/get/{id}/score")
     public ResponseEntity<?> getPersonScore(@PathVariable Long id){
         try{
@@ -365,8 +399,12 @@ public class PersonController {
     // ----------------------------------------------------------------------------------------------------------------
     // POST REQUESTS FOR CREATING OR IMPORTING DATA
     // ----------------------------------------------------------------------------------------------------------------
-    // Saving
 
+    /**
+     * Saves a person in the database.
+     * @param data DTO of a person.
+     * @return Plain text of the new person's ID. InternalServerError if something goes wrong.
+     */
     @PostMapping("/save")
     public ResponseEntity<?> addPerson(@Validated(OnCreate.class) @RequestBody PersonDTO data){
         Long personId = personService.savePerson(data);
@@ -374,6 +412,11 @@ public class PersonController {
         return ResponseEntity.ok(personId);
     }
 
+    /**
+     * Saves a single entry of employment for a person.
+     * @param data DTO of a single employment entry.
+     * @return Plain text of the newely created job's ID. InternalServerError if something goes wrong.
+     */
     @PostMapping("/save/employment")
     public ResponseEntity<?> addEmployment(@Validated @RequestBody CreateEmploymentDTO data){
         Long employmentId = personService.saveEmployment(data);
@@ -381,15 +424,22 @@ public class PersonController {
         return ResponseEntity.ok(employmentId);
     }
 
+    /**
+     * TODO: Implement
+     * @return
+     */
     @PostMapping("/save/document")
     public ResponseEntity<?> addDocument(){
-        // TODO: implement
         return ResponseEntity.ok(null);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Creating
 
+    /**
+     * Creates an application in the database for a person.
+     * @param data DTO of an application.
+     * @return Plain text of the newly created application's ID. InternalServerError if something goes wrong.
+     */
     @PostMapping("/create/application")
     public ResponseEntity<?> createApplication(@Validated @RequestBody CreateCreditApplicationDTO data){
         Long creditApplicationId = personService.createCreditApplication(data);
@@ -397,6 +447,11 @@ public class PersonController {
         return ResponseEntity.ok(creditApplicationId);
     }
     
+    /**
+     * Creates a credit object for a person. Used for giving out credits. Will manually create new payments!!!
+     * @param data DTO of a credit.
+     * @return Plain text of newly created credit. InternalServerError if something goes wrong.
+     */
     @PostMapping("/create/credit")
     public ResponseEntity<?> createCredit(@Validated @RequestBody CreateCreditDTO data){
         Long creditId = personService.createCredit(data);
@@ -405,8 +460,12 @@ public class PersonController {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Importing
 
+    /**
+     * Imports credit data.
+     * @param data Fully filled DTO of a credit.
+     * @return Plain text of the newly created credit ID. InternalServerError if something goes wrong.
+     */
     @PostMapping("/import/credit")
     public ResponseEntity<?> importCredit(@Validated @RequestBody ImportCreditDTO data){
         Long creditId = personService.importCredit(data);
@@ -414,6 +473,11 @@ public class PersonController {
         return ResponseEntity.ok(creditId);
     }
 
+    /**
+     * Imports payment data.
+     * @param data Fully filled DTO of a payment.
+     * @return Plain text of the newly created payment ID. InternalServerError if something goes wrong.
+     */
     @PostMapping("/import/payment")
     public ResponseEntity<?> importPayment(@Validated @RequestBody ImportPaymentDTO data){
         Long paymentId = personService.importPayment(data);
@@ -424,8 +488,12 @@ public class PersonController {
     // ----------------------------------------------------------------------------------------------------------------
     // PUT REQUESTS FOR UPDATING DATA
     // ----------------------------------------------------------------------------------------------------------------
-    // For managing our system's credits and payments
 
+    /**
+     * Updates person's info.
+     * @param data Fully filled DTO of the person. IDs must match someone in the database.
+     * @return The person's ID. InternalServerError if something goes wrong.
+     */
     @PatchMapping("/update")
     public ResponseEntity<?> updatePerson(@Validated(OnUpdate.class) @RequestBody PersonDTO data){
         Long personId = personService.updatePerson(data);
@@ -433,6 +501,11 @@ public class PersonController {
         return ResponseEntity.ok(personId);
     }
 
+    /**
+     * Updates a credit application. Be sure to capitalize the status of it, as it is enum.
+     * @param data DTO of the credit application.
+     * @return The application's ID. InternalServerError if something goes wrong.
+     */
     @PatchMapping("/update/application")
     public ResponseEntity<?> updateApplicationStatus(@Validated @RequestBody UpdateCreditApplicationDTO data){
         Long applicationId = personService.updateApplicationStatus(data);
@@ -440,6 +513,11 @@ public class PersonController {
         return ResponseEntity.ok(applicationId);
     }
 
+    /**
+     * Makes a payment. The DTO only needs the payment's ID. It will automatically calculate if it's paid late or on time.
+     * @param data DTO of the payment. Includes "id".
+     * @return The payment's ID.
+     */
     @PatchMapping("/update/payment")
     public ResponseEntity<?> updatePayment(@Validated @RequestBody UpdatePaymentDTO data){
         Long paymentId = personService.makePayment(data.getId());
@@ -451,6 +529,11 @@ public class PersonController {
     // DELETE REQUESTS FOR (soft) DELETING DATA
     // ----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Soft deletes a person.
+     * @param id Person's ID.
+     * @return The ID of the deleted person. BadRequest if the person is not found. InternalServerError if something goes wrong.
+     */
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deletePerson(@PathVariable Long id){
         try{
@@ -463,6 +546,11 @@ public class PersonController {
         }
     }
 
+    /**
+     * Soft deletes a credit for the person.
+     * @param id Credit's ID.
+     * @return The ID of the deleted credit. BadRequest if the credit is not found. InternalServerError if something goes wrong.
+     */
     @DeleteMapping("/delete/credit/{id}")
     public ResponseEntity<?> deleteCredit(@PathVariable Long id){
         try{
@@ -475,6 +563,11 @@ public class PersonController {
         }
     }
 
+    /**
+     * Deletes an employment entry for the person.
+     * @param id Employment's ID.
+     * @return null if successful. BadRequest if the employment is not found. InternalServerError if something goes wrong.
+     */
     @DeleteMapping("/delete/employment/{id}")
     public ResponseEntity<?> deleteEmployment(@PathVariable Long id){
         try{

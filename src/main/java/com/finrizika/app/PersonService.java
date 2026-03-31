@@ -42,7 +42,6 @@ public class PersonService {
         LocalDate due = credit.getIssuedDate();
 
         BigDecimal totalAmount = credit.getAmount().multiply(BigDecimal.ONE.add(credit.getInterestRate())); // Flat sum = Amount * (1.00+intr.rate)
-
         BigDecimal installment = totalAmount.divide(BigDecimal.valueOf(numberOfInstallments), 2, RoundingMode.HALF_UP); // each month's installment.
 
         List<Payment> schedule = new ArrayList<>();
@@ -63,6 +62,8 @@ public class PersonService {
         }
         paymentRepository.saveAll(schedule);
     }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------
 
     private boolean checkEmployment(Person person){
         long jobCount = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).count();
@@ -121,7 +122,7 @@ public class PersonService {
         return score;
     }
 
-    // ---------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------------------------
 
     public Person getById(Long id){
         return personRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Person not found."));
@@ -151,7 +152,7 @@ public class PersonService {
         return credit.getPayments();
     }
 
-    // ---------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------------------------
     
     public Long savePerson(PersonDTO dto){
         Person p = Person.from(dto);
