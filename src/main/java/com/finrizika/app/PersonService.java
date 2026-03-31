@@ -3,9 +3,10 @@ package com.finrizika.app;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalLong;
 import org.springframework.stereotype.Service;
 import com.finrizika.app.PersonController.CreateCreditApplicationDTO;
 import com.finrizika.app.PersonController.CreateCreditDTO;
@@ -63,20 +64,60 @@ public class PersonService {
         paymentRepository.saveAll(schedule);
     }
 
-    private Long calculateScore(Long personId){
-        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
+    private boolean checkEmployment(Person person){
+        long jobCount = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).count();
+        if(jobCount > 0) return true;
+        return false;
+    }
 
-        Long score = 0l;
-
+    private Integer dtiScoring(Person person){
         List<Credit> creditHistory = person.getCreditHistory();
         BigDecimal totalDebt = creditHistory.stream().map(Credit::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-        Comparator<Employment> compare = Comparator.comparing(Employment::getStartDate).reversed();
-        BigDecimal currentSalary = person.getEmploymentHistory().stream().sorted(compare).findFirst().map(Employment::getSalary).orElse(BigDecimal.ZERO);
+        BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal dti = totalDebt.divide(currentSalary);
-        
-        // TODO: DTI scoring
-        // TODO: Salary
-        // TODO: missed
+        if(dti.compareTo(BigDecimal.valueOf(0.5f)) == -1) return 0;
+        else if(dti.compareTo(BigDecimal.valueOf(0.3f)) == -1 || dti.compareTo(BigDecimal.valueOf(0.3f)) == 0) return 15;
+        else return 30;
+    }
+
+    private Integer latenessScoring(Person person){
+        List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
+        List<Payment> allPayments = creditHistoryPast2Years.stream().flatMap(credit -> {
+            return credit.getPayments().stream();
+        }).toList();
+        long latePaymentCount = allPayments.stream().filter(payment -> payment.getStatus() == PaymentStatus.LATE || payment.getStatus() == PaymentStatus.MISSED).count();
+        if(latePaymentCount > 2) return 0;
+        else if(latePaymentCount >= 1) return 20;
+        else return 40;
+    }
+
+    private Integer salaryScoring(Person person){
+        BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if(currentSalary.compareTo(BigDecimal.valueOf(1000)) == -1) return 0;
+        else if(currentSalary.compareTo(BigDecimal.valueOf(2000)) == -1) return 10;
+        else return 20;
+    }
+
+    private Integer lengthScoring(Person person){
+        List<Employment> currentJobs = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).toList();
+        OptionalLong biggestLength = currentJobs.stream().mapToLong(job -> ChronoUnit.YEARS.between(job.getStartDate(), LocalDate.now())).max();
+        if(biggestLength.isEmpty()) return 0;
+
+        if(biggestLength.getAsLong() < 2) return 15;
+        else return 30;
+
+    }
+
+    public Integer calculateScore(Long personId){
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
+
+        if(!checkEmployment(person)) return 0;
+
+        Integer score = 0;
+        score += dtiScoring(person);
+        score += latenessScoring(person);
+        score += salaryScoring(person);
+        score += lengthScoring(person);
 
         return score;
     }

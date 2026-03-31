@@ -2,9 +2,7 @@ package com.finrizika.app;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
 import com.finrizika.app.PersonController.ImportPaymentDTO;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

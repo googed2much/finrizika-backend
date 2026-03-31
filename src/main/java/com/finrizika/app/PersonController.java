@@ -351,6 +351,17 @@ public class PersonController {
         }
     }
 
+    @GetMapping("/get/{id}/score")
+    public ResponseEntity<?> getPersonScore(@PathVariable Long id){
+        try{
+            Integer score = personService.calculateScore(id);
+            return ResponseEntity.ok(score);
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // POST REQUESTS FOR CREATING OR IMPORTING DATA
     // ----------------------------------------------------------------------------------------------------------------
