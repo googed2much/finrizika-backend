@@ -490,7 +490,7 @@ public class PersonController {
      * 
      * @return
      */
-    @PostMapping(value="/save/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value="/upload/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> addDocument(@ModelAttribute SaveFileDTO dto){
         if (dto.getFile() == null || dto.getFile().isEmpty()) {
             return ResponseEntity.badRequest().body("No file provided");

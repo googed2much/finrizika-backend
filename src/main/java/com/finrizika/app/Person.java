@@ -61,7 +61,7 @@ public class Person extends Individual{
     @Enumerated(EnumType.STRING)
     private Sex sex;
 
-    @OneToMany(mappedBy = "person" , cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Employment> employmentHistory = new ArrayList<>();
 
     public Person() {}

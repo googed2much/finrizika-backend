@@ -1,37 +1,45 @@
 package com.finrizika.app;
 
+import java.io.IOError;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import com.finrizika.app.CompanyController.CompanyDTO;
+import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final DocumentRepository documentRepository;
 
-    public CompanyService(CompanyRepository companyRepository) {
+    public CompanyService(CompanyRepository companyRepository, DocumentRepository documentRepository) {
         this.companyRepository = companyRepository;
+        this.documentRepository = documentRepository;
     }
 
-    public List<Company> getByCompanyCode(Long companyCode) {
-        List<Company> matches = companyRepository.findByCode(companyCode);
-        return matches;
+    @Value("${app.document.upload-directory}")
+    private String storagePath;
+    private Path documentStorageLocation;
+    @PostConstruct
+    public void initializeStorage() throws IOException{
+        this.documentStorageLocation = Paths.get(storagePath).toAbsolutePath().normalize();
+        Files.createDirectories(this.documentStorageLocation);
     }
 
-    public List<Company> getAllCompanies() {
-        List<Company> companies = companyRepository.findAll();
-        return companies;
-    }
+    // --------------------------------------------------------------------------------------------------------------
 
-    public void createCompany(Long code, String name, String owner, String telephone, String email, Long createdById) {
-        Company company = new Company();
-        company.setCode(code);
-        company.setName(name);
-        company.setOwner(owner);
-        company.setTelephone(telephone);
-        company.setEmail(email);
-        company.setCreatedById(createdById);
-        companyRepository.save(company);
-    }
 
     public double calculateQuickLiquidityRatio(double shortTermAssets, double inventory, double shortTermLiabilities) {
         return (shortTermAssets - inventory) / shortTermLiabilities;
@@ -144,6 +152,84 @@ public class CompanyService {
         }
 
         return Math.min(10, (int) Math.floor((1000 - points) / 100) + 1);
+    }
+
+    // --------------------------------------------------------------------------------------------------------------
+
+    public Company getCompany(Long id) throws EntityNotFoundException{
+        Company company = companyRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
+        return company;
+    }
+
+    public List<Company> getCompanyList() {
+        List<Company> companies = companyRepository.findAll();
+        return companies;
+    }
+
+    public List<Document> getDocumentList(Long companyId) throws EntityNotFoundException{
+        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Company not found."));
+        return company.getDocuments();
+    }
+
+    public Document getDocument(Long documentId) throws EntityNotFoundException{
+        Document document = documentRepository.findById(documentId).orElseThrow(() -> new EntityNotFoundException());
+        return document;
+    }
+
+    public UrlResource retrieveDocument(Document document) throws MalformedURLException, IOError{
+        Path filePath = this.documentStorageLocation.resolve(document.getFilename()).normalize();
+        UrlResource resource = new UrlResource(filePath.toUri());
+        return resource;
+    }
+
+    // --------------------------------------------------------------------------------------------------------------
+
+    public Long createCompany(CompanyDTO dto) {
+        Company company = Company.from(dto);
+        Company saved = companyRepository.save(company);
+        return saved.getId();
+    }
+
+    public Long saveDocument(Long companyId, MultipartFile file) throws IOException, EntityNotFoundException{
+        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Company not found."));
+
+        String filename = storeDocument(file);
+        Document document = new Document();
+        document.setFilename(filename);
+        document.setContentType(file.getContentType());
+        document.setIndividual(company);
+        Document saved = documentRepository.save(document);
+        return saved.getId();
+    }   
+
+    private String storeDocument(MultipartFile file) throws IOException{
+        String filename = StringUtils.cleanPath(file.getOriginalFilename());
+        String uniqueFilename = UUID.randomUUID() + "_" + filename;
+        Path targetLocation = this.documentStorageLocation.resolve(uniqueFilename);
+        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        return uniqueFilename;
+    }
+
+    // --------------------------------------------------------------------------------------------------------------
+
+    public Long updateCompany(CompanyDTO dto) throws EntityNotFoundException{
+        Company company = companyRepository.findById(dto.getId()).orElseThrow(() -> new EntityNotFoundException("Company not found"));
+        company.setCompanyId(dto.getCompanyId());
+        company.setName(dto.getName());
+        company.setOwnerFullname(dto.getOwnerFullname());
+        company.setTelephone(dto.getTelephone());
+        company.setEmail(dto.getEmail());
+        Company saved = companyRepository.save(company);
+        return saved.getId();
+    }
+    
+    // --------------------------------------------------------------------------------------------------------------
+
+    public Long deleteCompany(Long id) throws EntityNotFoundException{
+        Company company = companyRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
+        company.softDelete();
+        Company saved = companyRepository.save(company);
+        return saved.getId();
     }
 
 }

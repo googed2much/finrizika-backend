@@ -53,9 +53,7 @@ public class PersonService {
 
     @Value("${app.document.upload-directory}")
     private String storagePath;
-
     private Path documentStorageLocation;
-
     @PostConstruct
     public void initializeStorage() throws IOException{
         this.documentStorageLocation = Paths.get(storagePath).toAbsolutePath().normalize();

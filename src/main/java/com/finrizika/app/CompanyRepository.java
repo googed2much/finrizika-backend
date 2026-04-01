@@ -1,10 +1,10 @@
 package com.finrizika.app;
 
-import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CompanyRepository extends JpaRepository<Company, Long> {
-    List<Company> findByCode(Long code);
+    Optional<Company> findById(Long id);
 }
