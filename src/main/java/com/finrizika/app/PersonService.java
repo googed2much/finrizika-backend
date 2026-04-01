@@ -1,12 +1,22 @@
 package com.finrizika.app;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import com.finrizika.app.PersonController.CreateCreditApplicationDTO;
 import com.finrizika.app.PersonController.CreateCreditDTO;
@@ -15,8 +25,11 @@ import com.finrizika.app.PersonController.ImportCreditDTO;
 import com.finrizika.app.PersonController.ImportPaymentDTO;
 import com.finrizika.app.PersonController.PersonDTO;
 import com.finrizika.app.PersonController.UpdateCreditApplicationDTO;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional
@@ -24,16 +37,29 @@ public class PersonService {
 
     private final PersonRepository personRepository;
     private final EmploymentRepository employmentRepository;
+    private final DocumentRepository documentRepository;
     private final CreditRepository creditRepository;
     private final PaymentRepository paymentRepository;
     private final CreditApplicationRepository creditApplicationRepository;
 
-    public PersonService(PersonRepository personRepository, EmploymentRepository employmentRepository, CreditRepository creditRepository, PaymentRepository paymentRepository, CreditApplicationRepository creditApplicationRepository) {
+    public PersonService(PersonRepository personRepository, EmploymentRepository employmentRepository, DocumentRepository documentRepository, CreditRepository creditRepository, PaymentRepository paymentRepository, CreditApplicationRepository creditApplicationRepository) {
         this.personRepository = personRepository;
         this.employmentRepository = employmentRepository;
+        this.documentRepository = documentRepository;
         this.creditRepository = creditRepository;
         this.paymentRepository = paymentRepository;
         this.creditApplicationRepository = creditApplicationRepository;
+    }
+
+    @Value("${app.document.upload-directory}")
+    private String storagePath;
+
+    private Path documentStorageLocation;
+
+    @PostConstruct
+    public void initializeStorage() throws IOException{
+        this.documentStorageLocation = Paths.get(storagePath).toAbsolutePath().normalize();
+        Files.createDirectories(this.documentStorageLocation);
     }
 
     // ---------------------------------------------------------
@@ -64,6 +90,8 @@ public class PersonService {
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------
+    // TODO: IMTI VIDURKI PER 6 MENESIUS
+    // TODO: STAZAS 
 
     private boolean checkEmployment(Person person){
         long jobCount = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).count();
@@ -73,9 +101,14 @@ public class PersonService {
 
     private Integer dtiScoring(Person person){
         List<Credit> creditHistory = person.getCreditHistory();
-        BigDecimal totalDebt = creditHistory.stream().map(Credit::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<Credit> activeCredits = creditHistory.stream().filter(credit -> credit.getStatus() == CreditStatus.ACTIVE).toList();
+        BigDecimal monthlyPayment = activeCredits.stream().map(credit -> {
+            List<Payment> payments = credit.getPayments();
+            if(payments.size() != 0) return payments.get(0).getAmount();
+            return BigDecimal.ZERO;
+        }).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal dti = totalDebt.divide(currentSalary, 10, RoundingMode.HALF_UP);
+        BigDecimal dti = monthlyPayment.divide(currentSalary, 10, RoundingMode.HALF_UP);
         if(dti.compareTo(BigDecimal.valueOf(0.5)) > 0) return 0;
         else if(dti.compareTo(BigDecimal.valueOf(0.3)) < 0) return 30;
         else return 15;
@@ -124,8 +157,8 @@ public class PersonService {
 
     // ----------------------------------------------------------------------------------------------------------------------------------
 
-    public Person getById(Long id){
-        return personRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+    public Person getById(Long personId){
+        return personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
     }
 
     public List<Person> getList(){
@@ -135,6 +168,22 @@ public class PersonService {
     public List<Employment> getEmploymentList(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         return person.getEmploymentHistory();
+    }
+
+    public List<Document> getDocumentList(Long personId) throws EntityNotFoundException{
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        return person.getDocuments();
+    }
+
+    public Document getDocument(Long documentId) throws EntityNotFoundException{
+        Document document = documentRepository.findById(documentId).orElseThrow(() -> new EntityNotFoundException());
+        return document;
+    }
+
+    public UrlResource retrieveDocument(Document document) throws MalformedURLException, IOError{
+        Path filePath = this.documentStorageLocation.resolve(document.getFilename()).normalize();
+        UrlResource resource = new UrlResource(filePath.toUri());
+        return resource;
     }
 
     public List<CreditApplication> getApplicationList(Long personId){
@@ -169,6 +218,26 @@ public class PersonService {
         employment.setPerson(person);
         Employment saved = employmentRepository.save(employment);
         return saved.getId();
+    }
+
+    public Long saveDocument(Long personId, MultipartFile file) throws IOException, EntityNotFoundException{
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+
+        String filename = storeDocument(file);
+        Document document = new Document();
+        document.setFilename(filename);
+        document.setContentType(file.getContentType());
+        document.setIndividual(person);
+        Document saved = documentRepository.save(document);
+        return saved.getId();
+    }   
+
+    private String storeDocument(MultipartFile file) throws IOException{
+        String filename = StringUtils.cleanPath(file.getOriginalFilename());
+        String uniqueFilename = UUID.randomUUID() + "_" + filename;
+        Path targetLocation = this.documentStorageLocation.resolve(uniqueFilename);
+        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        return uniqueFilename;
     }
 
     public Long createCreditApplication(CreateCreditApplicationDTO dto){

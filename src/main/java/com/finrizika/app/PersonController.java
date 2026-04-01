@@ -1,15 +1,25 @@
 package com.finrizika.app;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.util.List;
+
+import org.apache.catalina.connector.Response;
+import org.springframework.core.io.UrlResource;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +27,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -80,6 +91,15 @@ public class PersonController {
             personDTO.setSex(entity.getSex());
             return personDTO;
         }
+    }
+
+    @Getter
+    @Setter
+    public static class SaveFileDTO{
+        private Long personId;
+        private MultipartFile file;
+
+        public SaveFileDTO(){}
     }
 
     @Getter
@@ -281,6 +301,23 @@ public class PersonController {
         }
     }
 
+    @Getter
+    @Setter
+    public static class SendDocumentDTO{
+
+        private Long id;
+        private String filename;
+
+        public SendDocumentDTO(){}
+
+        public static SendDocumentDTO from(Document document){
+            SendDocumentDTO dto = new SendDocumentDTO();
+            dto.setId(document.getId());
+            dto.setFilename(document.getFilename());
+            return dto;
+        }
+    }
+
     // ----------------------------------------------------------------------------------------------
     // GET REQUESTS FOR GETTING DATA
     // ----------------------------------------------------------------------------------------------
@@ -357,6 +394,39 @@ public class PersonController {
         }
     }
 
+    @GetMapping("/get{id}/documents")
+    public ResponseEntity<?> getDocumentList(@PathVariable Long id){
+        try{
+            List<Document> documents = personService.getDocumentList(id);
+            return ResponseEntity.ok(documents.stream().map(document -> {
+                return SendDocumentDTO.from(document);
+            }).toList());
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/get/document/{id}")
+    public ResponseEntity<?> getDocument(@PathVariable Long id){
+        try{
+            Document document = personService.getDocument(id);
+            try{
+                UrlResource resource = personService.retrieveDocument(document);
+                return ResponseEntity.ok().contentType(MediaType.parseMediaType(document.getContentType())).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getFilename() + "\"").body(resource);
+            }
+            catch(MalformedURLException e){
+                return ResponseEntity.internalServerError().body(e.getMessage());
+            }
+            catch(IOError e){
+                return ResponseEntity.internalServerError().body(e.getMessage());
+            }
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     /**
      * Gets all payment data of the credit.
      * @param id Credit's id.
@@ -420,12 +490,25 @@ public class PersonController {
     }
 
     /**
-     * TODO: Implement
+     * 
      * @return
      */
-    @PostMapping("/save/document")
-    public ResponseEntity<?> addDocument(){
-        return ResponseEntity.ok(null);
+    @PostMapping(value="/save/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> addDocument(@ModelAttribute SaveFileDTO dto){
+        if (dto.getFile() == null || dto.getFile().isEmpty()) {
+            return ResponseEntity.badRequest().body("No file provided");
+        }
+
+        try{
+            Long documentId = personService.saveDocument(dto.getPersonId(), dto.getFile());
+            return ResponseEntity.ok(documentId);
+        }
+        catch(IOException e){
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------
