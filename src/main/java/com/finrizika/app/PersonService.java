@@ -188,6 +188,8 @@ public class PersonService {
         credit.setDueDate(credit.getIssuedDate().plusMonths(dto.getNumberOfInstallments()));
         credit.setStatus(CreditStatus.ACTIVE);
         credit.setIssuedDate(LocalDate.now());
+        if(dto.getNumberOfInstallments() < 12) credit.setType(CreditType.SHORT_TERM);
+        else credit.setType(CreditType.LONG_TERM);
         Credit saved = creditRepository.save(credit);
         generatePaymentSchedule(saved, dto.getNumberOfInstallments());
         return saved.getId();

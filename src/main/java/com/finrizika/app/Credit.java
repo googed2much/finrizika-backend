@@ -86,9 +86,7 @@ public class Credit {
     public static Credit from(CreateCreditDTO dto){
         Credit credit = new Credit();
         credit.setAmount(dto.getAmount());
-        credit.setIssuedDate(dto.getIssuedDate());
         credit.setInterestRate(dto.getInterestRate());
-        credit.setType(dto.getType());
         return credit;
     }
 

@@ -3,7 +3,6 @@ package com.finrizika.app;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -114,10 +113,6 @@ public class PersonController {
         private BigDecimal amount;
         @NotNull
         private BigDecimal interestRate;
-        @NotNull
-        private LocalDate issuedDate;
-        @NotNull
-        private CreditType type;
         @NotNull
         private Integer numberOfInstallments;
 
