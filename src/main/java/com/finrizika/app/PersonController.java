@@ -6,8 +6,6 @@ import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.util.List;
-
-import org.apache.catalina.connector.Response;
 import org.springframework.core.io.UrlResource;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
