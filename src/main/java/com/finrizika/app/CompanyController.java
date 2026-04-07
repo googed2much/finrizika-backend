@@ -7,14 +7,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.finrizika.app.CompanyController.CompanyDTO;
+import com.finrizika.app.CompanyController.UpdateCompanyDataDTO;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import java.io.IOError;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/juridical")
@@ -36,8 +43,37 @@ public class CompanyController {
     @Getter
     @Setter
     public static class CompanyDTO {
-        @NotBlank(groups = {OnUpdate.class})
-        private Long id;
+        // @NotBlank(groups = {OnUpdate.class})
+        // private Long id;
+        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
+        private String companyId;
+        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
+        private String name;
+        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
+        private String ownerFullname;
+        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
+        private String telephone;
+        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
+        private String email;
+        private long id;
+        public CompanyDTO(){}
+
+        public static CompanyDTO from(Company entity){
+            CompanyDTO dto = new CompanyDTO();
+            dto.setCompanyId(entity.getCompanyId());
+            dto.setName(entity.getName());
+            dto.setOwnerFullname(entity.getOwnerFullname());
+            dto.setTelephone(entity.getTelephone());
+            dto.setEmail(entity.getEmail());
+            dto.setId(entity.getId());
+            return dto;
+        }
+    }
+    @Getter
+    @Setter
+    public static class CreateCompanyDTO {
+        // @NotBlank(groups = {OnUpdate.class})
+        // private Long id;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String companyId;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
@@ -49,11 +85,10 @@ public class CompanyController {
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String email;
 
-        public CompanyDTO(){}
+        public CreateCompanyDTO(){}
 
-        public static CompanyDTO from(Company entity){
-            CompanyDTO dto = new CompanyDTO();
-            dto.setId(entity.getId());
+        public static CreateCompanyDTO from(Company entity){
+            CreateCompanyDTO dto = new CreateCompanyDTO();
             dto.setCompanyId(entity.getCompanyId());
             dto.setName(entity.getName());
             dto.setOwnerFullname(entity.getOwnerFullname());
@@ -62,7 +97,104 @@ public class CompanyController {
             return dto;
         }
     }
+    @Getter
+    @Setter
+    public static class UpdateCompanyDataDTO {
+        
+        private Long companyId;
 
+        private BigDecimal shortTermAssets;
+        private BigDecimal inventory;
+        private BigDecimal shortTermLiabilities;
+
+        private BigDecimal equity;
+        private BigDecimal totalAssets;
+            
+        private BigDecimal netProfit;
+        private BigDecimal interest;
+        private BigDecimal taxes;
+            
+        private BigDecimal financialLiabilities;
+        private BigDecimal cash;
+        private BigDecimal depreciation;
+        private BigDecimal amortization;
+
+        private BigDecimal salesRevenueCurrent;
+        private BigDecimal salesRevenue1YearOld;
+        public UpdateCompanyDataDTO(){}
+        public static UpdateCompanyDataDTO from(CompanyData entity){
+            UpdateCompanyDataDTO dto = new UpdateCompanyDataDTO();
+            dto.setCompanyId(entity.getCompany().getId());
+
+            dto.setShortTermAssets(entity.getShortTermAssets());
+            dto.setInventory(entity.getInventory());
+            dto.setShortTermLiabilities(entity.getShortTermLiabilities());
+
+            dto.setEquity(entity.getEquity());
+            dto.setTotalAssets(entity.getTotalAssets());
+                
+            dto.setNetProfit(entity.getNetProfit());
+            dto.setInterest(entity.getInterest());
+            dto.setTaxes(entity.getTaxes());
+                
+            dto.setFinancialLiabilities(entity.getFinancialLiabilities());
+            dto.setCash(entity.getCash());
+            dto.setDepreciation(entity.getDepreciation());
+            dto.setAmortization(entity.getAmortization());
+
+            dto.setSalesRevenueCurrent(entity.getSalesRevenueCurrent());
+            dto.setSalesRevenue1YearOld(entity.getSalesRevenue1YearOld());
+            return dto;
+        } 
+    }
+      @Getter
+    @Setter
+    public static class SendCompanyDataDTO {
+        private Long id;
+        private BigDecimal shortTermAssets;
+        private BigDecimal inventory;
+        private BigDecimal shortTermLiabilities;
+
+        private BigDecimal equity;
+        private BigDecimal totalAssets;
+            
+        private BigDecimal netProfit;
+        private BigDecimal interest;
+        private BigDecimal taxes;
+            
+        private BigDecimal financialLiabilities;
+        private BigDecimal cash;
+        private BigDecimal depreciation;
+        private BigDecimal amortization;
+
+        private BigDecimal salesRevenueCurrent;
+        private BigDecimal salesRevenue1YearOld;
+        public SendCompanyDataDTO(){}
+        public static SendCompanyDataDTO from(CompanyData entity){
+            SendCompanyDataDTO dto = new SendCompanyDataDTO();
+            dto.setId(entity.getId());
+
+            dto.setShortTermAssets(entity.getShortTermAssets());
+            dto.setInventory(entity.getInventory());
+            dto.setShortTermLiabilities(entity.getShortTermLiabilities());
+
+            dto.setEquity(entity.getEquity());
+            dto.setTotalAssets(entity.getTotalAssets());
+                
+            dto.setNetProfit(entity.getNetProfit());
+            dto.setInterest(entity.getInterest());
+            dto.setTaxes(entity.getTaxes());
+                
+            dto.setFinancialLiabilities(entity.getFinancialLiabilities());
+            dto.setCash(entity.getCash());
+            dto.setDepreciation(entity.getDepreciation());
+            dto.setAmortization(entity.getAmortization());
+
+            dto.setSalesRevenueCurrent(entity.getSalesRevenueCurrent());
+            dto.setSalesRevenue1YearOld(entity.getSalesRevenue1YearOld());
+            return dto;
+        } 
+    }
     @Getter
     @Setter
     public static class SaveFileDTO{
@@ -75,15 +207,17 @@ public class CompanyController {
     @Getter
     @Setter
     public static class SendDocumentDTO{
+
         private Long id;
         private String filename;
-
+        private String originalName;
         public SendDocumentDTO(){}
 
         public static SendDocumentDTO from(Document document){
             SendDocumentDTO dto = new SendDocumentDTO();
             dto.setId(document.getId());
             dto.setFilename(document.getFilename());
+            dto.setOriginalName(document.getOriginalName());
             return dto;
         }
     }
@@ -93,6 +227,13 @@ public class CompanyController {
     @GetMapping("/get")
     public ResponseEntity<?> getAllCompanies() {
         List<Company> results = companyService.getCompanyList();
+        return ResponseEntity.ok(results.stream().map(company -> {
+            return CompanyDTO.from(company);
+        }));
+    }
+    @GetMapping("/get/list/{page}")
+    public ResponseEntity<?> getAllCompaniesPaged(@PathVariable Long page) {
+        List<Company> results = companyService.getListPaged(page);
         return ResponseEntity.ok(results.stream().map(company -> {
             return CompanyDTO.from(company);
         }));
@@ -108,8 +249,29 @@ public class CompanyController {
             return ResponseEntity.notFound().build();
         }
     }
+    @GetMapping("/get/by/{id}")
+    public ResponseEntity<?> getCompany(@PathVariable String id) {
+        try{
+            Company results = companyService.getCompanybyId(id);
+            return ResponseEntity.ok(CompanyDTO.from(results));
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/data/{id}")
+    public ResponseEntity<?> getCompanyData(@PathVariable Long id) {
+        try{
+            UpdateCompanyDataDTO results = companyService.getCompanyData(id);
+            return ResponseEntity.ok(results);
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
 
-    @GetMapping("/get{id}/documents")
+   
+    @GetMapping("/get/{id}/documents")
     public ResponseEntity<?> getDocumentList(@PathVariable Long id){
         try{
             List<Document> documents = companyService.getDocumentList(id);
@@ -128,7 +290,7 @@ public class CompanyController {
             Document document = companyService.getDocument(id);
             try{
                 UrlResource resource = companyService.retrieveDocument(document);
-                return ResponseEntity.ok().contentType(MediaType.parseMediaType(document.getContentType())).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getFilename() + "\"").body(resource);
+                return ResponseEntity.ok().contentType(MediaType.parseMediaType(document.getContentType())).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getOriginalName() + "\"").body(resource);
             }
             catch(MalformedURLException e){
                 return ResponseEntity.internalServerError().body(e.getMessage());
@@ -141,11 +303,30 @@ public class CompanyController {
             return ResponseEntity.notFound().build();
         }
     }
-
+    @GetMapping("/get/{id}/scores")
+    public ResponseEntity<?> getPersonScores(@PathVariable Long id){
+        try{
+            Map<String, BigDecimal> scores = companyService.calculateScores(id);
+            return ResponseEntity.ok(scores);
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/pages")
+    public ResponseEntity<?> getPageInfo(){
+        try{
+            Integer pageInfo = companyService.getLastPageInfo();
+            return ResponseEntity.ok(pageInfo);
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
     // -----------------------------------------------------------------------
 
     @PostMapping("/create")
-    public ResponseEntity<?> createCompanyData(@Validated(OnCreate.class) @RequestBody CompanyDTO data) {
+    public ResponseEntity<?> createCompanyData(@Validated(OnCreate.class) @RequestBody CreateCompanyDTO data) {
         Long id = companyService.createCompany(data);
         return ResponseEntity.ok(id);
     }
@@ -170,7 +351,7 @@ public class CompanyController {
 
     // ------------------------------------------------------------------------
 
-    @PatchMapping("/update")
+    @PostMapping("/update")
     public ResponseEntity<?> updateCompany(@Validated(OnUpdate.class) @RequestBody CompanyDTO data){
         try{
             Long id = companyService.updateCompany(data);
@@ -180,7 +361,16 @@ public class CompanyController {
             return ResponseEntity.notFound().build();
         }
     }
-
+    @PostMapping("/update/data")
+    public ResponseEntity<?> updateCompanyData(@Validated(OnUpdate.class) @RequestBody UpdateCompanyDataDTO data){
+        try{
+            Long id = companyService.updateCompanyData(data);
+            return ResponseEntity.ok(id);
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
     // ------------------------------------------------------------------------
 
     @DeleteMapping("/delete/{id}")

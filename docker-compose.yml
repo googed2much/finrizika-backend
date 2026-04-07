@@ -14,7 +14,8 @@ services:
       - finrizika_network
     security_opt:
       - no-new-privileges:true
-
+    volumes:
+      - ./uploads:/app/uploads
   mariadb:
     image: mariadb:11
     restart: unless-stopped

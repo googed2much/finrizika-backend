@@ -19,6 +19,7 @@ public class Document {
 
     private String filename;
     private String contentType;
+    private String originalName;
     @Column(nullable = false, columnDefinition="boolean default false")
     private boolean parsed = false;
 

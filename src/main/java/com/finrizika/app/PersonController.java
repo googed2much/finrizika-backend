@@ -4,8 +4,11 @@ import java.io.IOError;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.core.io.UrlResource;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
@@ -184,6 +187,7 @@ public class PersonController {
         private CreditStatus status;
         @NotNull
         private CreditType type;
+        private Long latePaymentCount;
 
         public ImportCreditDTO(){}
     }
@@ -212,6 +216,7 @@ public class PersonController {
         private LocalDate dueDate;
         private CreditStatus status;
         private CreditType type;
+        private Long latePaymentCount;
 
         public SendCreditDTO(){}
 
@@ -224,6 +229,7 @@ public class PersonController {
             dto.setDueDate(entity.getDueDate());
             dto.setStatus(entity.getStatus());
             dto.setType(entity.getType());
+            dto.setLatePaymentCount(entity.getLatePaymentCount());
             return dto;
         }
     }
@@ -304,13 +310,14 @@ public class PersonController {
 
         private Long id;
         private String filename;
-
+        private String originalName;
         public SendDocumentDTO(){}
 
         public static SendDocumentDTO from(Document document){
             SendDocumentDTO dto = new SendDocumentDTO();
             dto.setId(document.getId());
             dto.setFilename(document.getFilename());
+            dto.setOriginalName(document.getOriginalName());
             return dto;
         }
     }
@@ -325,10 +332,30 @@ public class PersonController {
      * @return JSON of a single person's data. NotFound response if the person is not found.
      */
     @GetMapping("/get/{id}")
-    public ResponseEntity<?> getPersonById(@PathVariable Long id){
+    public ResponseEntity<?> getPersonById(@PathVariable long id){
         try{
             Person result = personService.getById(id);
             return ResponseEntity.ok(PersonDTO.from(result));
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/by/{id}")
+    public ResponseEntity<?> getPersonById(@PathVariable String id){
+        try{
+            Person result = personService.getByCitizenId(id);
+            return ResponseEntity.ok(PersonDTO.from(result));
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/pages")
+    public ResponseEntity<?> getPageInfo(){
+        try{
+            Integer pageInfo = personService.getLastPageInfo();
+            return ResponseEntity.ok(pageInfo);
         }
         catch(EntityNotFoundException e){
             return ResponseEntity.notFound().build();
@@ -342,6 +369,13 @@ public class PersonController {
     @GetMapping("/get/list")
     public ResponseEntity<?> getList(){
         List<Person> result = personService.getList();
+        return ResponseEntity.ok(result.stream().map(person -> {
+            return PersonDTO.from(person);
+        }).toList());
+    }
+    @GetMapping("/get/list/{page}")
+    public ResponseEntity<?> getListPaged(@PathVariable Long page){
+        List<Person> result = personService.getListPaged(page);
         return ResponseEntity.ok(result.stream().map(person -> {
             return PersonDTO.from(person);
         }).toList());
@@ -391,7 +425,7 @@ public class PersonController {
         }
     }
 
-    @GetMapping("/get{id}/documents")
+    @GetMapping("/get/{id}/documents")
     public ResponseEntity<?> getDocumentList(@PathVariable Long id){
         try{
             List<Document> documents = personService.getDocumentList(id);
@@ -410,7 +444,7 @@ public class PersonController {
             Document document = personService.getDocument(id);
             try{
                 UrlResource resource = personService.retrieveDocument(document);
-                return ResponseEntity.ok().contentType(MediaType.parseMediaType(document.getContentType())).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getFilename() + "\"").body(resource);
+                return ResponseEntity.ok().contentType(MediaType.parseMediaType(document.getContentType())).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getOriginalName() + "\"").body(resource);
             }
             catch(MalformedURLException e){
                 return ResponseEntity.internalServerError().body(e.getMessage());
@@ -452,6 +486,16 @@ public class PersonController {
         try{
             Integer score = personService.calculateScore(id);
             return ResponseEntity.ok(score);
+        }
+        catch(EntityNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/{id}/scores")
+    public ResponseEntity<?> getPersonScores(@PathVariable Long id){
+        try{
+            Map<String, Integer> scores = personService.calculateScores(id);
+            return ResponseEntity.ok(scores);
         }
         catch(EntityNotFoundException e){
             return ResponseEntity.notFound().build();

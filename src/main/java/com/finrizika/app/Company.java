@@ -1,8 +1,13 @@
 package com.finrizika.app;
 
 import com.finrizika.app.CompanyController.CompanyDTO;
+import com.finrizika.app.CompanyController.CreateCompanyDTO;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
@@ -12,10 +17,13 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(
-    uniqueConstraints = @UniqueConstraint(columnNames = {"companyId", "deleted"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"companyId"})
 )
 public class Company extends Individual{
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     @Column(nullable = false, unique = true)
     private String companyId;
     @Column(nullable = false)
@@ -40,9 +48,18 @@ public class Company extends Individual{
         company.setOwnerFullname(dto.getOwnerFullname());
         company.setTelephone(dto.getTelephone());
         company.setEmail(dto.getEmail());
+        company.setId(dto.getId());
         return company;
     }
-
+    public static Company from(CreateCompanyDTO dto){
+        Company company = new Company();
+        company.setCompanyId(dto.getCompanyId());
+        company.setName(dto.getName());
+        company.setOwnerFullname(dto.getOwnerFullname());
+        company.setTelephone(dto.getTelephone());
+        company.setEmail(dto.getEmail());
+        return company;
+    }
     // --------------------------------------------------------------------------
 
 }

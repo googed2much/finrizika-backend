@@ -12,7 +12,10 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional
 public class PersonService {
 
+    private Integer NUM_ELEMENTS_PER_PAGE=10;
     private final PersonRepository personRepository;
     private final EmploymentRepository employmentRepository;
     private final DocumentRepository documentRepository;
@@ -122,7 +126,13 @@ public class PersonService {
         else if(latePaymentCount >= 1) return 20;
         else return 40;
     }
-
+     private Integer latenessCreditScoring(Person person){
+        List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
+        long latePaymentCount = creditHistoryPast2Years.stream().mapToLong(credit -> credit.getLatePaymentCount()==null? 0: credit.getLatePaymentCount()).sum();
+        if(latePaymentCount > 2) return 0;
+        else if(latePaymentCount >= 1) return 20;
+        else return 40;
+    }
     private Integer salaryScoring(Person person){
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
         if(currentSalary.compareTo(BigDecimal.valueOf(1000)) < 0) return 0;
@@ -146,21 +156,70 @@ public class PersonService {
         Integer dtiScore = dtiScoring(person);
         if(dtiScore == 0) return 0;
         score += dtiScore;
-        score += latenessScoring(person);
+        score += latenessCreditScoring(person);
         score += salaryScoring(person);
         score += lengthScoring(person);
 
         return score;
     }
+    public Map<String, Integer> calculateScores(Long personId){
+        Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
 
+        Map<String, Integer> scores = new HashMap<>();
+
+        if(!checkEmployment(person)) {
+            scores.put("totalScore", 0);
+            return scores;
+        }
+
+        int dtiScore = dtiScoring(person);
+        if(dtiScore == 0){
+            scores.put("totalScore", 0);
+            scores.put("dtiScore", 0);
+            return scores;
+        }
+
+        int lateness = latenessCreditScoring(person);
+        int salary = salaryScoring(person);
+        int length = lengthScoring(person);
+
+        int total = dtiScore + lateness + salary + length;
+
+        scores.put("dtiScore", dtiScore);
+        scores.put("latenessScore", lateness);
+        scores.put("salaryScore", salary);
+        scores.put("lengthScore", length);
+        scores.put("totalScore", total);
+
+        return scores;
+    }
     // ----------------------------------------------------------------------------------------------------------------------------------
 
     public Person getById(Long personId){
         return personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
     }
+    public Person getByCitizenId(String personId){
+        return personRepository.findByCitizenId(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+    }
+    public Integer getLastPageInfo(){
+        List<Person> people = personRepository.findAll();
+        int lastPage = (int)Math.ceil(people.size()/NUM_ELEMENTS_PER_PAGE);
+        return lastPage;
+    }
 
     public List<Person> getList(){
         return personRepository.findAll();
+    }
+    public List<Person> getListPaged(Long page){
+        int numPerPage = 10;
+        List<Person> people =personRepository.findAll();
+        List<Person> pagedList = new ArrayList<Person>();
+        int pageStart = numPerPage*page.intValue();
+        int pageEnd = Math.min(people.size(),pageStart+numPerPage);
+        for(int i = pageStart;i<pageEnd;i++){
+            pagedList.add(people.get(i));
+        } 
+        return pagedList;
     }
 
     public List<Employment> getEmploymentList(Long personId){
@@ -180,7 +239,9 @@ public class PersonService {
 
     public UrlResource retrieveDocument(Document document) throws MalformedURLException, IOError{
         Path filePath = this.documentStorageLocation.resolve(document.getFilename()).normalize();
+        System.out.println("Looking for file: " + filePath);
         UrlResource resource = new UrlResource(filePath.toUri());
+        
         return resource;
     }
 
@@ -222,10 +283,12 @@ public class PersonService {
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
 
         String filename = storeDocument(file);
+        String originalName = file.getOriginalFilename();
         Document document = new Document();
         document.setFilename(filename);
         document.setContentType(file.getContentType());
         document.setIndividual(person);
+        document.setOriginalName(originalName);
         Document saved = documentRepository.save(document);
         return saved.getId();
     }   

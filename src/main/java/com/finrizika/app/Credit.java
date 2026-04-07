@@ -55,6 +55,9 @@ public class Credit {
     @Column(nullable = false)
     private LocalDate dueDate;
 
+    @Column(nullable = true)
+    private Long latePaymentCount;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private CreditStatus status;
@@ -98,6 +101,7 @@ public class Credit {
         credit.setDueDate(dto.getDueDate());
         credit.setStatus(dto.getStatus());
         credit.setType(dto.getType());
+        credit.setLatePaymentCount(dto.getLatePaymentCount());
         return credit;
     }
 
