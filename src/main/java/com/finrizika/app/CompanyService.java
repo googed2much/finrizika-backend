@@ -3,7 +3,6 @@ package com.finrizika.app;
 import java.io.IOError;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -21,11 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import com.finrizika.app.CompanyController.CompanyDTO;
-import com.finrizika.app.CompanyController.CreateCompanyDTO;
 import com.finrizika.app.CompanyController.UpdateCompanyDataDTO;
-
-import com.finrizika.app.CompanyController.SendCompanyDataDTO;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -239,7 +234,7 @@ public class CompanyService {
 
     // --------------------------------------------------------------------------------------------------------------
 
-    public Long createCompany(CreateCompanyDTO dto) {
+    public Long createCompany(CompanyDTO dto) {
         Company company = Company.from(dto);
         Company saved = companyRepository.save(company);
         CompanyData newData = new CompanyData(saved);

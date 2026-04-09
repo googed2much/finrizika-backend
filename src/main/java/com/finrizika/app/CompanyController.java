@@ -7,13 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.finrizika.app.CompanyController.CompanyDTO;
-import com.finrizika.app.CompanyController.UpdateCompanyDataDTO;
-
-import jakarta.persistence.Column;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import java.io.IOError;
@@ -43,8 +39,8 @@ public class CompanyController {
     @Getter
     @Setter
     public static class CompanyDTO {
-        // @NotBlank(groups = {OnUpdate.class})
-        // private Long id;
+        @NotNull(groups = {OnUpdate.class})
+        private Long id;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String companyId;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
@@ -55,7 +51,6 @@ public class CompanyController {
         private String telephone;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String email;
-        private long id;
         public CompanyDTO(){}
 
         public static CompanyDTO from(Company entity){
@@ -66,34 +61,6 @@ public class CompanyController {
             dto.setTelephone(entity.getTelephone());
             dto.setEmail(entity.getEmail());
             dto.setId(entity.getId());
-            return dto;
-        }
-    }
-    @Getter
-    @Setter
-    public static class CreateCompanyDTO {
-        // @NotBlank(groups = {OnUpdate.class})
-        // private Long id;
-        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
-        private String companyId;
-        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
-        private String name;
-        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
-        private String ownerFullname;
-        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
-        private String telephone;
-        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
-        private String email;
-
-        public CreateCompanyDTO(){}
-
-        public static CreateCompanyDTO from(Company entity){
-            CreateCompanyDTO dto = new CreateCompanyDTO();
-            dto.setCompanyId(entity.getCompanyId());
-            dto.setName(entity.getName());
-            dto.setOwnerFullname(entity.getOwnerFullname());
-            dto.setTelephone(entity.getTelephone());
-            dto.setEmail(entity.getEmail());
             return dto;
         }
     }
@@ -326,7 +293,7 @@ public class CompanyController {
     // -----------------------------------------------------------------------
 
     @PostMapping("/create")
-    public ResponseEntity<?> createCompanyData(@Validated(OnCreate.class) @RequestBody CreateCompanyDTO data) {
+    public ResponseEntity<?> createCompanyData(@Validated(OnCreate.class) @RequestBody CompanyDTO data) {
         Long id = companyService.createCompany(data);
         return ResponseEntity.ok(id);
     }

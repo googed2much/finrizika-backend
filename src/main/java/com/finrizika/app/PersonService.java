@@ -12,7 +12,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,17 +113,6 @@ public class PersonService {
         if(dti.compareTo(BigDecimal.valueOf(0.5)) > 0) return 0;
         else if(dti.compareTo(BigDecimal.valueOf(0.3)) < 0) return 30;
         else return 15;
-    }
-
-    private Integer latenessScoring(Person person){
-        List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
-        List<Payment> allPayments = creditHistoryPast2Years.stream().flatMap(credit -> {
-            return credit.getPayments().stream();
-        }).toList();
-        long latePaymentCount = allPayments.stream().filter(payment -> payment.getStatus() == PaymentStatus.LATE || payment.getStatus() == PaymentStatus.MISSED).count();
-        if(latePaymentCount > 2) return 0;
-        else if(latePaymentCount >= 1) return 20;
-        else return 40;
     }
      private Integer latenessCreditScoring(Person person){
         List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
@@ -264,9 +252,6 @@ public class PersonService {
     
     public Long savePerson(PersonDTO dto){
         Person p = Person.from(dto);
-        if (personRepository.existsByCitizenId(p.getCitizenId())) {
-            return null;
-        }
         Person saved = personRepository.save(p);
         return saved.getId();
     }
