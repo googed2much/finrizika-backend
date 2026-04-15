@@ -91,8 +91,6 @@ public class PersonService {
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------
-    // TODO: IMTI VIDURKI PER 6 MENESIUS
-    // TODO: STAZAS 
 
     private boolean checkEmployment(Person person){
         long jobCount = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).count();
@@ -116,7 +114,7 @@ public class PersonService {
     }
      private Integer latenessCreditScoring(Person person){
         List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
-        long latePaymentCount = creditHistoryPast2Years.stream().mapToLong(credit -> credit.getLatePaymentCount()==null? 0: credit.getLatePaymentCount()).sum();
+        Long latePaymentCount = creditHistoryPast2Years.stream().mapToLong(credit -> credit.getLatePaymentCount()==null? 0: credit.getLatePaymentCount()).sum();
         if(latePaymentCount > 2) return 0;
         else if(latePaymentCount >= 1) return 20;
         else return 40;
