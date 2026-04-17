@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 
+
 @RestController
 @RequestMapping("/api/juridical")
 public class CompanyController {
@@ -113,6 +114,32 @@ public class CompanyController {
             dto.setSalesRevenue1YearOld(entity.getSalesRevenue1YearOld());
             return dto;
         } 
+        public UpdateCompanyDataDTO(Long companyId,BigDecimal shortTermAssets, BigDecimal inventory,BigDecimal shortTermLiabilities, 
+            BigDecimal cash,BigDecimal equity,BigDecimal totalAssets,BigDecimal netProfit,BigDecimal interest,
+            BigDecimal taxes, BigDecimal financialLiabilities, BigDecimal depreciation, BigDecimal amortization,
+            BigDecimal salesRevenueCurrent, BigDecimal salesRevenue1YearOld){
+            this.companyId = companyId;
+
+            this.shortTermAssets = shortTermAssets;
+            this.inventory = inventory;
+            this.shortTermLiabilities = shortTermLiabilities;
+
+            this.cash = cash;
+            this.equity = equity;
+            this.totalAssets = totalAssets;
+
+            this.netProfit = netProfit;
+            this.interest = interest;
+            this.taxes = taxes;
+
+            this.financialLiabilities =financialLiabilities;
+
+            this.depreciation = depreciation;
+            this.amortization = amortization;
+
+            this.salesRevenueCurrent = salesRevenueCurrent;
+            this.salesRevenue1YearOld = salesRevenue1YearOld;
+        }
     }
       @Getter
     @Setter
@@ -338,6 +365,12 @@ public class CompanyController {
             return ResponseEntity.notFound().build();
         }
     }
+    @GetMapping("/read/data/{id}")
+    public ResponseEntity<?> FetchCompanyDataFromFile(@PathVariable Long id) {
+        try {companyService.readDataFromPDF(id); return ResponseEntity.ok(id);}
+        catch(IOException e){return ResponseEntity.notFound().build();}
+    }
+    
     // ------------------------------------------------------------------------
 
     @DeleteMapping("/delete/{id}")
