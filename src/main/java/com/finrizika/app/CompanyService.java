@@ -14,9 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -29,9 +26,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.DocumentType;
 import org.jsoup.select.Elements;
-import org.jsoup.nodes.Element;
+
 @Service
 public class CompanyService {
 
@@ -277,7 +273,7 @@ public class CompanyService {
         if (docs.isEmpty()) {
             throw new RuntimeException("No documents found");
         }
-        Document doc= docs.getLast(); 
+        Document doc = docs.getLast(); 
         if(doc.getFilename().endsWith(".xhtml")) {
             org.jsoup.nodes.Document parsedHtml =
             Jsoup.parse(retrieveDocument(doc).getInputStream(), "UTF-8", "");
@@ -293,7 +289,7 @@ public class CompanyService {
             int grynasisPelnas =0;
             int palukanos = 0;
             int mokesciai =0;
-            int palukanuSanaudos = 0;
+            //int palukanuSanaudos = 0;
 
             int finansiniaiIsipareigojimai = 0;
             int pinigai = 0;
@@ -429,7 +425,7 @@ public class CompanyService {
                 }   
                 }
             }
-            UpdateCompanyDataDTO updateCompany = new UpdateCompanyDataDTO(companyId,BigDecimal.valueOf(pinigaiirPiniguEkvivalentai),
+            UpdateCompanyDataDTO updateCompany = new UpdateCompanyDataDTO(companyId, BigDecimal.valueOf(pinigaiirPiniguEkvivalentai),
                     BigDecimal.valueOf(atsargos),BigDecimal.valueOf(trumpalaikiaiIsipareigojimai),BigDecimal.valueOf(pinigai),
                     BigDecimal.valueOf(nuosavasKapitalas),BigDecimal.valueOf(visasTurtas),BigDecimal.valueOf(grynasisPelnas),
                     BigDecimal.valueOf(palukanos),BigDecimal.valueOf(mokesciai),BigDecimal.valueOf(finansiniaiIsipareigojimai),
@@ -438,7 +434,8 @@ public class CompanyService {
             updateCompanyData(updateCompany);
             //System.out.println(parsedHtml);
             System.out.println("---- .xhtml TEXT END ----");
-        }else {
+        }
+        else {
             try{ PDDocument pdf = PDDocument.load(retrieveDocument(doc).getInputStream());
             PDFTextStripper stripper = new PDFTextStripper();
             String text = stripper.getText(pdf);
@@ -449,6 +446,7 @@ public class CompanyService {
             }
             catch (IOException e){ System.out.println("failed with loading");}
         }
+
         return false;
     }
     // --------------------------------------------------------------------------------------------------------------

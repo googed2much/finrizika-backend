@@ -1,5 +1,7 @@
 package com.finrizika.app;
 
+import java.time.LocalDate;
+import org.hibernate.annotations.CreationTimestamp;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -22,6 +24,9 @@ public class Document {
     private String originalName;
     @Column(nullable = false, columnDefinition="boolean default false")
     private boolean parsed = false;
+
+    @CreationTimestamp
+    private LocalDate uploadedAt;
 
     @ManyToOne
     @JoinColumn(name = "individual_id", nullable = true)
