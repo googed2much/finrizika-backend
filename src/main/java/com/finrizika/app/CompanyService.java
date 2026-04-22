@@ -258,7 +258,7 @@ public class CompanyService {
         document.setOriginalName(originalName);
         Document saved = documentRepository.save(document);
         return saved.getId();
-    }  
+    }
 
     private String storeDocument(MultipartFile file) throws IOException{
         String filename = StringUtils.cleanPath(file.getOriginalFilename());
@@ -267,16 +267,15 @@ public class CompanyService {
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
         return uniqueFilename;
     }
-    public boolean readDataFromPDF(Long companyId) throws IOException{
+    public boolean readDataFromPDF(Long companyId) throws IOException, RuntimeException{
         Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         List<Document> docs = company.getDocuments();
         if (docs.isEmpty()) {
             throw new RuntimeException("No documents found");
         }
-        Document doc = docs.getLast(); 
+        Document doc = docs.getLast();
         if(doc.getFilename().endsWith(".xhtml")) {
-            org.jsoup.nodes.Document parsedHtml =
-            Jsoup.parse(retrieveDocument(doc).getInputStream(), "UTF-8", "");
+            org.jsoup.nodes.Document parsedHtml = Jsoup.parse(retrieveDocument(doc).getInputStream(), "UTF-8", "");
             System.out.println("---- .xhtml TEXT START ----");
             Elements rows = parsedHtml.select("tr");
             int pinigaiirPiniguEkvivalentai = 0;

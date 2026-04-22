@@ -45,7 +45,7 @@ public class UserController {
         private Long id;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String email;
-        @NotBlank(groups = {OnUpdate.class})
+        @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String password;
         @NotBlank(groups = {OnCreate.class, OnUpdate.class})
         private String telephone;
