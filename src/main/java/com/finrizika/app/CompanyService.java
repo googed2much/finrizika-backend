@@ -26,6 +26,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 @Service
@@ -306,14 +307,23 @@ public class CompanyService {
                 
                 if(pinigaiirPiniguEkvivalentai==0)
                 if(rowText.contains("pinigai ir pinigų ekvivalentai")){
-                    String[] values = rows.get(i+1).text().split(" ");
-                    pinigaiirPiniguEkvivalentai = Integer.parseInt((values[0]+values[1]));
+                    // String[] values = rows.get(i+1).text().split(" ");
+                    Element row = rows.get(i+1);
+                    Elements els = row.select("td,th");
+                    
+                    pinigaiirPiniguEkvivalentai = Integer.parseInt((els.get(2).text().replaceAll(" ", "")));
                     System.out.println(pinigaiirPiniguEkvivalentai);
+                    for (Element el : els) {
+                        System.out.println(el.toString());
+                    };
                 }
                 if(atsargos==0){
                  if(rowText.contains("atsargos")){
-                    String[] values = rows.get(i).text().split(" ");
-                    atsargos = Integer.parseInt((values[2]+values[3]));
+                    // String[] values = rows.get(i).text().split(" ");
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    atsargos = Integer.parseInt((els.get(2).text().replaceAll(" ", "")));
                     System.out.println(atsargos);
                 }   
                 }
@@ -321,8 +331,11 @@ public class CompanyService {
                  if(rowText.contains("trumpalaikiai atidėjiniai")){
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    String[] values = rows.get(i+1).text().split(" ");
-                    trumpalaikiaiIsipareigojimai = Integer.parseInt((values[0]+values[1]));
+                    // String[] values = rows.get(i+1).text().split(" ");
+                    Element row = rows.get(i+1);
+                    Elements els = row.select("td,th");
+                    
+                    trumpalaikiaiIsipareigojimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
                     System.out.println(trumpalaikiaiIsipareigojimai);
                 }   
                 }
@@ -331,71 +344,98 @@ public class CompanyService {
                  if(rowText.contains("akcininkų nuosavybės iš")){
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    String[] values = rows.get(i).text().split(" ");
-                    nuosavasKapitalas = Integer.parseInt((values[4]+values[5]));
+                    // String[] values = rows.get(i).text().split(" ");
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    nuosavasKapitalas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
                     System.out.println(nuosavasKapitalas);
                 }   
                 }
                 if(visasTurtas==0){
                  if(rowText.contains("turto iš viso")){
-                    String[] values = rows.get(i).text().split(" ");
-                    visasTurtas = Integer.parseInt((values[3]+values[4]));
+                    // String[] values = rows.get(i).text().split(" ");
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    visasTurtas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
                     System.out.println(visasTurtas);
                 }   
                 }
 
                 if(grynasisPelnas==0){
                  if(rowText.contains("grynasis pelnas/(nuostoliai)")){
-                    String[] values = rows.get(i).text().split(" ");
-                    grynasisPelnas = Integer.parseInt((values[2]+values[3]));
-                    System.out.println(grynasisPelnas);
+                    // String[] values = rows.get(i).text().split(" ");
+                     Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    grynasisPelnas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                   System.out.println(grynasisPelnas);
                 }   
                 }
                 if(palukanos==0){
                  if(rowText.contains("finansinės veiklos sąnaudos")){
-                    String[] values = rows.get(i).text().split(" ");
+                    // String[] values = rows.get(i).text().split(" ");
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    palukanos = Integer.parseInt(els.get(2).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
                     System.out.println(palukanos);
                 }   
                 }
                 if(mokesciai==0){
                  if(rowText.contains("pelno mokestis")){
-                    String[] values = rows.get(i).text().split(" ");
+                    // String[] values = rows.get(i).text().split(" ");
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    mokesciai = Integer.parseInt((values[3].replace("(", "").strip()+values[4].substring(0,values[4].length()-1)));
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    mokesciai = Integer.parseInt(els.get(2).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
                     System.out.println(mokesciai);
                 }   
                 }
                 if(finansiniaiIsipareigojimai==0){
                  if(rowText.contains("finansinės skolos")){
-                    String[] values = rows.get(i).text().split(" ");
+                    // String[] values = rows.get(i).text().split(" ");
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    finansiniaiIsipareigojimai = Integer.parseInt((values[3]+values[4]));
-                    System.out.println(finansiniaiIsipareigojimai);
+                     Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    finansiniaiIsipareigojimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                   System.out.println(finansiniaiIsipareigojimai);
                 }   
                 }
                 if(pinigai==0){
                  if(rowText.contains("pinigai ir pinigų ekvivalentai")){
-                    String[] values = rows.get(i).text().split(" ");
+                    // String[] values = rows.get(i).text().split(" ");
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    pinigai = Integer.parseInt((values[5]+values[6]));
-                    System.out.println(pinigai);
+                      Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    pinigai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                   System.out.println(pinigai);
                 }   
                 }
                 if(nusidevejimas==0){
                  if(rowText.contains("nusidėvėjimas")){
                     if(nusidevejimasSkips<11)nusidevejimasSkips+=1;
                     else {
-                        String[] values = rows.get(i).text().split(" ");
+                        // String[] values = rows.get(i).text().split(" ");
                         System.out.println(rows.get(i).text());
                         System.out.println(rows.get(i+1).text());
-                        nusidevejimas = Integer.parseInt((values[8].replace("(", "").strip()+values[9].substring(0,values[9].length()-1)));
-                        System.out.println(nusidevejimas);
+                         Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    nusidevejimas = Integer.parseInt(els.last().text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
+                   System.out.println(nusidevejimas);
                     }
                 }   
                 }
@@ -403,22 +443,29 @@ public class CompanyService {
                  if(rowText.contains("amortizacijos sąnaudos")){
                     if(amortizacijaSkips<3)amortizacijaSkips+=1;
                     else {
-                        String[] values = rows.get(i).text().split(" ");
+                        // String[] values = rows.get(i).text().split(" ");
                         System.out.println(rows.get(i).text());
                         System.out.println(rows.get(i+1).text());
-                        amortizacija = Integer.parseInt((values[2].replace("(", "").replace(")", "")).strip());
-                        System.out.println(amortizacija);
+                             Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    amortizacija = Integer.parseInt(els.get(1).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
+                   System.out.println(amortizacija);
                     }
                 }   
                 }
 
                 if(pardavimai==0){
                  if(rowText.contains("pardavimai")){
-                    String[] values = rows.get(i).text().split(" ");
+                    // String[] values = rows.get(i).text().split(" ");
                     System.out.println(rows.get(i).text());
                     System.out.println(rows.get(i+1).text());
-                    pardavimai = Integer.parseInt((values[2]+values[3]));
-                    pardavimaiOld = Integer.parseInt((values[4]+values[5]));
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                 
+                    pardavimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                    pardavimaiOld = Integer.parseInt(els.get(3).text().replaceAll(" ",""));
                     System.out.println(pardavimai);
                     System.out.println(pardavimaiOld);
                 }   
