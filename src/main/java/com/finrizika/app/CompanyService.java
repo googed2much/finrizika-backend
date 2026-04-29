@@ -17,6 +17,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import com.finrizika.app.CompanyController.CompanyDTO;
@@ -31,20 +32,20 @@ import org.jsoup.select.Elements;
 @Service
 public class CompanyService {
 
-    private Integer NUM_ELEMENTS_PER_PAGE=10;
+    private Long NUM_ELEMENTS_PER_PAGE = 10l;
     private final CompanyRepository companyRepository;
     private final DocumentRepository documentRepository;
     private final CompanyDataRepository companyDataRepo;
+    @Value("${app.document.upload-directory}")
+    private String storagePath;
+    private Path documentStorageLocation;
 
-    public CompanyService(CompanyRepository companyRepository, DocumentRepository documentRepository,CompanyDataRepository companyDataRepo) {
+    public CompanyService(CompanyRepository companyRepository, DocumentRepository documentRepository,CompanyDataRepository companyDataRepo) throws IOException{
         this.companyRepository = companyRepository;
         this.documentRepository = documentRepository;
         this.companyDataRepo = companyDataRepo;
     }
 
-    @Value("${app.document.upload-directory}")
-    private String storagePath;
-    private Path documentStorageLocation;
     @PostConstruct
     public void initializeStorage() throws IOException{
         this.documentStorageLocation = Paths.get(storagePath).toAbsolutePath().normalize();
@@ -52,7 +53,6 @@ public class CompanyService {
     }
 
     // --------------------------------------------------------------------------------------------------------------
-
 
     public BigDecimal calculateQuickLiquidityRatio(BigDecimal shortTermAssets, BigDecimal inventory, BigDecimal shortTermLiabilities) {
         return (shortTermAssets.subtract(inventory)).divide(shortTermLiabilities, RoundingMode.HALF_UP);
@@ -78,9 +78,11 @@ public class CompanyService {
     public BigDecimal calculateNetProfitability(BigDecimal netProfit, BigDecimal salesRevenue) {
         return netProfit.divide(salesRevenue,RoundingMode.HALF_UP);
     }
+
     public BigDecimal calculateChangeInSalesRevenue(BigDecimal yearOldRev, BigDecimal currentRev) {
         return (currentRev.subtract(yearOldRev)).divide(yearOldRev,RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
     }
+
     public Map<String,BigDecimal> calculateScores(Long id) {
         CompanyData data = companyDataRepo.findByCompany_Id(id).orElseThrow(() -> new EntityNotFoundException("User not found."));
         Map<String,BigDecimal> map = new HashMap<>();
@@ -92,6 +94,7 @@ public class CompanyService {
         BigDecimal netProfitability = calculateNetProfitability(data.getNetProfit(), data.getSalesRevenueCurrent()).multiply(BigDecimal.valueOf(100));
         BigDecimal changeInSalesRevenue = calculateChangeInSalesRevenue(data.getSalesRevenue1YearOld(), data.getSalesRevenueCurrent());
         BigDecimal quickLiquidityRatio =  calculateQuickLiquidityRatio(data.getShortTermAssets(),data.getInventory(),data.getShortTermLiabilities());
+
         // Quick Liquidity Ratio
         if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(0.8))<0) {
         } else if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(1)) < 0) {
@@ -180,93 +183,6 @@ public class CompanyService {
         return map;
     }
 
-    // --------------------------------------------------------------------------------------------------------------
-
-    public Integer getLastPageInfo(){
-        List<Company> companies = companyRepository.findAll();
-        int lastPage = (int)Math.ceil(companies.size()/NUM_ELEMENTS_PER_PAGE);
-        return lastPage;
-    }
-    public Company getCompany(Long id) throws EntityNotFoundException{
-        Company company = companyRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
-        return company;
-    }
-    public Company getCompanybyId(String id) throws EntityNotFoundException{
-        Company company = companyRepository.findByCompanyId(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
-        return company;
-    }
-    // pagal imones table id
-    public UpdateCompanyDataDTO getCompanyData(Long id) throws EntityNotFoundException{
-        CompanyData companyData = companyDataRepo.findByCompany_Id(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
-        UpdateCompanyDataDTO sendData = UpdateCompanyDataDTO.from(companyData);
-        return sendData;
-    }
-
-    public List<Company> getCompanyList() {
-        List<Company> companies = companyRepository.findAll();
-        return companies;
-    }
-    public List<Company> getListPaged(Long page){
-        int numPerPage = NUM_ELEMENTS_PER_PAGE;
-        List<Company> companies =companyRepository.findAll();
-        List<Company> pagedList = new ArrayList<Company>();
-        int pageStart = numPerPage*page.intValue();
-        int pageEnd = Math.min(companies.size(),pageStart+numPerPage);
-        for(int i = pageStart;i<pageEnd;i++){
-            pagedList.add(companies.get(i));
-        } 
-        return pagedList;
-    }
-
-    public List<Document> getDocumentList(Long companyId) throws EntityNotFoundException{
-        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
-        return company.getDocuments();
-    }
-
-    public Document getDocument(Long documentId) throws EntityNotFoundException{
-        Document document = documentRepository.findById(documentId).orElseThrow(() -> new EntityNotFoundException());
-        return document;
-    }
-
-    public UrlResource retrieveDocument(Document document) throws MalformedURLException, IOError{
-        Path filePath = this.documentStorageLocation.resolve(document.getFilename()).normalize();
-        System.out.println("Looking for file: " + filePath);
-        UrlResource resource = new UrlResource(filePath.toUri());
-        
-        return resource;
-    }
-
-    // --------------------------------------------------------------------------------------------------------------
-
-    public Long createCompany(CompanyDTO dto) {
-        Company company = Company.from(dto);
-        Company saved = companyRepository.save(company);
-        CompanyData newData = new CompanyData(saved);
-        companyDataRepo.save(newData);
-        return saved.getId();
-    }
-
-    public Long saveDocument(Long companyId, MultipartFile file) throws IOException, EntityNotFoundException{
-        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
-
-        String filename = storeDocument(file);
-        String originalName = file.getOriginalFilename();
-        Document document = new Document();
-        document.setFilename(filename);
-        document.setContentType(file.getContentType());
-        document.setIndividual(company);
-        document.setOriginalName(originalName);
-        Document saved = documentRepository.save(document);
-        return saved.getId();
-    }
-
-    private String storeDocument(MultipartFile file) throws IOException{
-        String filename = StringUtils.cleanPath(file.getOriginalFilename());
-        String uniqueFilename = UUID.randomUUID() + "_" + filename;
-        Path targetLocation = this.documentStorageLocation.resolve(uniqueFilename);
-        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-        return uniqueFilename;
-    }
     public boolean readDataFromPDF(Long companyId) throws IOException, RuntimeException{
         Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         List<Document> docs = company.getDocuments();
@@ -448,8 +364,113 @@ public class CompanyService {
 
         return false;
     }
+
     // --------------------------------------------------------------------------------------------------------------
 
+    @Transactional(readOnly = true)
+    public Long getLastPageInfo(){
+        List<Company> companies = companyRepository.findAll();
+        Long lastPage = Double.valueOf(Math.ceil(companies.size() / NUM_ELEMENTS_PER_PAGE)).longValue();
+        return lastPage;
+    }
+
+    @Transactional(readOnly = true)
+    public Company getCompany(Long id) throws EntityNotFoundException{
+        Company company = companyRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
+        return company;
+    }
+
+    @Transactional(readOnly = true)
+    public Company getCompanybyId(String id) throws EntityNotFoundException{
+        Company company = companyRepository.findByCompanyId(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
+        return company;
+    }
+
+    @Transactional(readOnly = true)
+    public UpdateCompanyDataDTO getCompanyData(Long id) throws EntityNotFoundException{
+        CompanyData companyData = companyDataRepo.findByCompany_Id(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
+        UpdateCompanyDataDTO sendData = UpdateCompanyDataDTO.from(companyData);
+        return sendData;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Company> getCompanyList() {
+        List<Company> companies = companyRepository.findAll();
+        return companies;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Company> getListPaged(Long page){
+        List<Company> companies = companyRepository.findAll();
+
+        List<Company> pagedList = new ArrayList<Company>();
+
+        Long pageStart = NUM_ELEMENTS_PER_PAGE * page;
+        Long pageEnd = Math.min(companies.size(), pageStart + NUM_ELEMENTS_PER_PAGE);
+
+        for(Long i = pageStart; i<pageEnd; i++){
+            pagedList.add(companies.get(i.intValue()));
+        }
+
+        return pagedList;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Document> getDocumentList(Long companyId) throws EntityNotFoundException{
+        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        return company.getDocuments();
+    }
+
+    @Transactional(readOnly = true)
+    public Document getDocument(Long documentId) throws EntityNotFoundException{
+        Document document = documentRepository.findById(documentId).orElseThrow(() -> new EntityNotFoundException());
+        return document;
+    }
+
+    public UrlResource retrieveDocument(Document document) throws MalformedURLException, IOError{
+        Path filePath = this.documentStorageLocation.resolve(document.getFilename()).normalize();
+        System.out.println("Looking for file: " + filePath);
+        UrlResource resource = new UrlResource(filePath.toUri());
+        return resource;
+    }
+
+    // --------------------------------------------------------------------------------------------------------------
+
+    @Transactional
+    public Long createCompany(CompanyDTO dto) {
+        Company company = Company.from(dto);
+        Company saved = companyRepository.save(company);
+        CompanyData newData = new CompanyData(saved);
+        companyDataRepo.save(newData);
+        return saved.getId();
+    }
+
+    @Transactional
+    public Long saveDocument(Long companyId, MultipartFile file) throws IOException, EntityNotFoundException{
+        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+
+        String filename = storeDocument(file);
+        String originalName = file.getOriginalFilename();
+        Document document = new Document();
+        document.setFilename(filename);
+        document.setContentType(file.getContentType());
+        document.setIndividual(company);
+        document.setOriginalName(originalName);
+        Document saved = documentRepository.save(document);
+        return saved.getId();
+    }
+
+    private String storeDocument(MultipartFile file) throws IOException{
+        String filename = StringUtils.cleanPath(file.getOriginalFilename());
+        String uniqueFilename = UUID.randomUUID() + "_" + filename;
+        Path targetLocation = this.documentStorageLocation.resolve(uniqueFilename);
+        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        return uniqueFilename;
+    }
+
+    // --------------------------------------------------------------------------------------------------------------
+
+    @Transactional
     public Long updateCompany(CompanyDTO dto) throws EntityNotFoundException{
         Company company = companyRepository.findById(dto.getId()).orElseThrow(() -> new EntityNotFoundException("Company not found"));
         company.setCompanyId(dto.getCompanyId());
@@ -460,6 +481,8 @@ public class CompanyService {
         Company saved = companyRepository.save(company);
         return saved.getId();
     }
+
+    @Transactional
     public Long updateCompanyData(UpdateCompanyDataDTO dto) throws EntityNotFoundException{
         CompanyData companyData = companyDataRepo.findByCompany_Id(dto.getCompanyId()).orElseThrow(() -> new EntityNotFoundException("Company not found"));
          companyData.setShortTermAssets(dto.getShortTermAssets());
@@ -485,6 +508,7 @@ public class CompanyService {
     }
     // --------------------------------------------------------------------------------------------------------------
 
+    @Transactional
     public Long deleteCompany(Long id) throws EntityNotFoundException{
         Company company = companyRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Company not found"));
         company.softDelete();

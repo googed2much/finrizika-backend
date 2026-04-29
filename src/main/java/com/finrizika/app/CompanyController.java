@@ -310,7 +310,7 @@ public class CompanyController {
     @GetMapping("/get/pages")
     public ResponseEntity<?> getPageInfo(){
         try{
-            Integer pageInfo = companyService.getLastPageInfo();
+            Long pageInfo = companyService.getLastPageInfo();
             return ResponseEntity.ok(pageInfo);
         }
         catch(EntityNotFoundException e){

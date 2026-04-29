@@ -3,6 +3,8 @@ package com.finrizika.app;
 import java.util.List;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.finrizika.app.UserController.UserDTO;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -23,6 +25,7 @@ public class UserService {
     }
 
     // Autorizacija
+    @Transactional(readOnly = true)
     public boolean authorize(Long id, Role requiredRole){
         User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
         Role currentRole = user.getRole();
@@ -32,6 +35,7 @@ public class UserService {
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
+    @Transactional
     public Long createUser(UserDTO dto){
         User user = new User();
         user.setEmail(dto.getEmail());
@@ -46,15 +50,19 @@ public class UserService {
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
+    @Transactional(readOnly = true)
     public User getUserById(Long id){
         return userRepository.findById(id).orElseThrow(()-> new EntityNotFoundException("User not found."));
     }
+
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
+    @Transactional
     public Long updateUser(UserDTO dto){
         User user = userRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("User not found: " + dto.getId()));
         user.setEmail(dto.getEmail());
@@ -67,5 +75,12 @@ public class UserService {
         return saved.getId();
     }
     // -----------------------------------------------------------------------
+    @Transactional
+    public Long deleteUser(Long id) throws RuntimeException{
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found: " + id));
+        user.softDelete();
+        User saved = userRepository.save(user);
+        return saved.getId();
+    }
 
 }

@@ -7,16 +7,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@Table(
-)
-public class CompanyData extends Individual{
+public class CompanyData{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,19 +26,15 @@ public class CompanyData extends Individual{
     private BigDecimal shortTermAssets;
     private BigDecimal inventory;
     private BigDecimal shortTermLiabilities;
-
     private BigDecimal equity;
     private BigDecimal totalAssets;
-        
     private BigDecimal netProfit;
     private BigDecimal interest;
     private BigDecimal taxes;
-        
     private BigDecimal financialLiabilities;
     private BigDecimal cash;
     private BigDecimal depreciation;
     private BigDecimal amortization;
-
     private BigDecimal salesRevenueCurrent;
     private BigDecimal salesRevenue1YearOld;
 
@@ -68,6 +61,7 @@ public class CompanyData extends Individual{
         this.salesRevenueCurrent = BigDecimal.ZERO;
         this.salesRevenue1YearOld = BigDecimal.ZERO;
     }
+    
     public CompanyData(){
         
     }

@@ -34,10 +34,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-@Transactional
 public class PersonService {
 
-    private Integer NUM_ELEMENTS_PER_PAGE=10;
+    private final Long NUM_ELEMENTS_PER_PAGE = 10l;
     private final PersonRepository personRepository;
     private final EmploymentRepository employmentRepository;
     private final DocumentRepository documentRepository;
@@ -65,6 +64,7 @@ public class PersonService {
 
     // ---------------------------------------------------------
 
+    @Transactional
     private void generatePaymentSchedule(Credit credit, Integer numberOfInstallments){
         LocalDate due = credit.getIssuedDate();
 
@@ -92,12 +92,14 @@ public class PersonService {
 
     // ----------------------------------------------------------------------------------------------------------------------------------
 
+    @Transactional(readOnly = true)
     private boolean checkEmployment(Person person){
         long jobCount = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).count();
         if(jobCount > 0) return true;
         return false;
     }
 
+    @Transactional(readOnly = true)
     private Integer dtiScoring(Person person){
         List<Credit> creditHistory = person.getCreditHistory();
         List<Credit> activeCredits = creditHistory.stream().filter(credit -> credit.getStatus() == CreditStatus.ACTIVE).toList();
@@ -112,13 +114,17 @@ public class PersonService {
         else if(dti.compareTo(BigDecimal.valueOf(0.3)) < 0) return 30;
         else return 15;
     }
-     private Integer latenessCreditScoring(Person person){
+
+    @Transactional(readOnly = true)
+    private Integer latenessCreditScoring(Person person){
         List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
         Long latePaymentCount = creditHistoryPast2Years.stream().mapToLong(credit -> credit.getLatePaymentCount()==null? 0: credit.getLatePaymentCount()).sum();
         if(latePaymentCount > 2) return 0;
         else if(latePaymentCount >= 1) return 20;
         else return 40;
     }
+
+    @Transactional(readOnly = true)
     private Integer salaryScoring(Person person){
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
         if(currentSalary.compareTo(BigDecimal.valueOf(1000)) < 0) return 0;
@@ -126,6 +132,7 @@ public class PersonService {
         else return 10;
     }
 
+    @Transactional(readOnly = true)
     private Integer lengthScoring(Person person){
         List<Employment> currentJobs = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).toList();
         OptionalLong biggestLength = currentJobs.stream().mapToLong(job -> ChronoUnit.YEARS.between(job.getStartDate(), LocalDate.now())).max();
@@ -133,6 +140,7 @@ public class PersonService {
         else return 30;
     }
 
+    @Transactional(readOnly = true)
     public Integer calculateScore(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
 
@@ -148,6 +156,8 @@ public class PersonService {
 
         return score;
     }
+
+    @Transactional(readOnly = true)
     public Map<String, Integer> calculateScores(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
 
@@ -181,21 +191,29 @@ public class PersonService {
     }
     // ----------------------------------------------------------------------------------------------------------------------------------
 
+    @Transactional(readOnly = true)
     public Person getById(Long personId){
         return personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
     }
+
+    @Transactional(readOnly = true)
     public Person getByCitizenId(String personId){
         return personRepository.findByCitizenId(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
     }
+
+    @Transactional(readOnly = true)
     public Integer getLastPageInfo(){
         List<Person> people = personRepository.findAll();
         int lastPage = (int)Math.ceil(people.size()/NUM_ELEMENTS_PER_PAGE);
         return lastPage;
     }
 
+    @Transactional(readOnly = true)
     public List<Person> getList(){
         return personRepository.findAll();
     }
+
+    @Transactional(readOnly = true)
     public List<Person> getListPaged(Long page){
         int numPerPage = 10;
         List<Person> people =personRepository.findAll();
@@ -208,16 +226,19 @@ public class PersonService {
         return pagedList;
     }
 
+    @Transactional(readOnly = true)
     public List<Employment> getEmploymentList(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         return person.getEmploymentHistory();
     }
 
+    @Transactional(readOnly = true)
     public List<Document> getDocumentList(Long personId) throws EntityNotFoundException{
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         return person.getDocuments();
     }
 
+    @Transactional(readOnly = true)
     public Document getDocument(Long documentId) throws EntityNotFoundException{
         Document document = documentRepository.findById(documentId).orElseThrow(() -> new EntityNotFoundException());
         return document;
@@ -227,20 +248,22 @@ public class PersonService {
         Path filePath = this.documentStorageLocation.resolve(document.getFilename()).normalize();
         System.out.println("Looking for file: " + filePath);
         UrlResource resource = new UrlResource(filePath.toUri());
-        
         return resource;
     }
 
+    @Transactional(readOnly = true)
     public List<CreditApplication> getApplicationList(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         return person.getCreditApplicationHistory();
     }
 
+    @Transactional(readOnly = true)
     public List<Credit> getCreditsFromPerson(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         return person.getCreditHistory();
     }
 
+    @Transactional(readOnly = true)
     public List<Payment> getPaymentsFromCredit(Long creditId) {
         Credit credit = creditRepository.findById(creditId).orElseThrow(() -> new EntityNotFoundException("Credit not found."));
         return credit.getPayments();
@@ -248,12 +271,14 @@ public class PersonService {
 
     // ----------------------------------------------------------------------------------------------------------------------------------
     
+    @Transactional
     public Long savePerson(PersonDTO dto){
         Person p = Person.from(dto);
         Person saved = personRepository.save(p);
         return saved.getId();
     }
 
+    @Transactional
     public Long saveEmployment(CreateEmploymentDTO dto){
         Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         Employment employment = Employment.from(dto);
@@ -262,6 +287,7 @@ public class PersonService {
         return saved.getId();
     }
 
+    @Transactional
     public Long saveDocument(Long personId, MultipartFile file) throws IOException, EntityNotFoundException{
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
 
@@ -284,6 +310,7 @@ public class PersonService {
         return uniqueFilename;
     }
 
+    @Transactional
     public Long createCreditApplication(CreateCreditApplicationDTO dto){
         Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         CreditApplication creditApplication = CreditApplication.from(dto);
@@ -294,6 +321,7 @@ public class PersonService {
         return saved.getId();
     }
 
+    @Transactional
     public Long createCredit(CreateCreditDTO dto){
         Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         Credit credit = Credit.from(dto);
@@ -308,6 +336,7 @@ public class PersonService {
         return saved.getId();
     }
 
+    @Transactional
     public Long importCredit(ImportCreditDTO dto){
         Person person = personRepository.findById(dto.getPersonId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         Credit credit = Credit.from(dto);
@@ -316,6 +345,7 @@ public class PersonService {
         return saved.getId();
     }
 
+    @Transactional
     public Long importPayment(ImportPaymentDTO dto){
         Credit credit = creditRepository.findById(dto.getCreditId()).orElseThrow(() -> new EntityNotFoundException("Credit not found."));
         Payment payment = Payment.from(dto);
@@ -326,6 +356,7 @@ public class PersonService {
 
     // ---------------------------------------------------------
 
+    @Transactional
     public Long updatePerson(PersonDTO dto){
         Person person = personRepository.findById(dto.getId()).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         person.setCitizenId(dto.getCitizenId());
@@ -342,6 +373,7 @@ public class PersonService {
         return updated.getId();
     }
 
+    @Transactional
     public Long updateApplicationStatus(UpdateCreditApplicationDTO dto){
         CreditApplication application = creditApplicationRepository.findById(dto.getId()).orElseThrow(() -> new EntityNotFoundException("Credit application not found."));
         application.setStatus(dto.getStatus());
@@ -349,6 +381,7 @@ public class PersonService {
         return saved.getId();
     }
 
+    @Transactional
     public Long makePayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("Payment not found."));
         LocalDate today = LocalDate.now();
@@ -360,6 +393,7 @@ public class PersonService {
 
     // ---------------------------------------------------------
 
+    @Transactional
     public Long deletePerson(Long id){
         Person person = personRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         person.softDelete();
@@ -367,6 +401,7 @@ public class PersonService {
         return deleted.getId();
     }
 
+    @Transactional
     public Long deleteCredit(Long creditId){
         Credit credit = creditRepository.findById(creditId).orElseThrow(() -> new EntityNotFoundException("Credit not found."));
         credit.softDelete();
@@ -374,6 +409,7 @@ public class PersonService {
         return deleted.getId();
     }
 
+    @Transactional
     public void deleteEmployment(Long employmentId) {
         Employment employment = employmentRepository.findById(employmentId).orElseThrow(() -> new EntityNotFoundException("Employment not found."));
         employmentRepository.delete(employment);
