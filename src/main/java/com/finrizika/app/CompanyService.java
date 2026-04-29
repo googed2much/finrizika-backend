@@ -184,7 +184,7 @@ public class CompanyService {
         return map;
     }
 
-    public boolean readDataFromPDF(Long companyId) throws IOException, RuntimeException{
+    public boolean readDataFromFile(Long companyId) throws IOException, RuntimeException{
         Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         List<Document> docs = company.getDocuments();
         if (docs.isEmpty()) {

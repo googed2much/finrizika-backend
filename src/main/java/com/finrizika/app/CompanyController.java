@@ -367,7 +367,7 @@ public class CompanyController {
     }
     @GetMapping("/read/data/{id}")
     public ResponseEntity<?> FetchCompanyDataFromFile(@PathVariable Long id) {
-        try {companyService.readDataFromPDF(id); return ResponseEntity.ok(id);}
+        try {companyService.readDataFromFile(id); return ResponseEntity.ok(id);}
         catch(IOException e){return ResponseEntity.notFound().build();}
     }
     
