@@ -487,8 +487,6 @@ public class CompanyService {
     public Long createCompany(CompanyDTO dto) {
         Company company = Company.from(dto);
         Company saved = companyRepository.save(company);
-        CompanyData newData = new CompanyData(saved);
-        companyDataRepo.save(newData);
         return saved.getId();
     }
 

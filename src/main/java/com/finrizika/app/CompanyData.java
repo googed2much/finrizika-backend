@@ -37,39 +37,12 @@ public class CompanyData{
     private BigDecimal amortization;
     private BigDecimal salesRevenueCurrent;
     private BigDecimal salesRevenue1YearOld;
-
-   public CompanyData(Company company) { 
-        this.company = company;
-
-        this.shortTermAssets = BigDecimal.ZERO;
-        this.inventory = BigDecimal.ZERO;
-        this.shortTermLiabilities = BigDecimal.ZERO;
-
-        this.cash = BigDecimal.ZERO;
-        this.equity = BigDecimal.ZERO;
-        this.totalAssets = BigDecimal.ZERO;
-
-        this.netProfit = BigDecimal.ZERO;
-        this.interest = BigDecimal.ZERO;
-        this.taxes = BigDecimal.ZERO;
-
-        this.financialLiabilities = BigDecimal.ZERO;
-
-        this.depreciation = BigDecimal.ZERO;
-        this.amortization = BigDecimal.ZERO;
-
-        this.salesRevenueCurrent = BigDecimal.ZERO;
-        this.salesRevenue1YearOld = BigDecimal.ZERO;
-    }
     
-    public CompanyData(){
-        
-    }
+    public CompanyData(){}
 
     // --------------------------------------------------------------------------
     // Factories
     // --------------------------------------------------------------------------
-
    
     // --------------------------------------------------------------------------
 
