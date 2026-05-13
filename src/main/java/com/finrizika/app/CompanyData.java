@@ -43,7 +43,26 @@ public class CompanyData{
     // --------------------------------------------------------------------------
     // Factories
     // --------------------------------------------------------------------------
-   
+    
+
+    static public CompanyData empty(){
+        CompanyData companyData = new CompanyData();
+        companyData.setShortTermAssets(null);
+        companyData.setInventory(null);
+        companyData.setShortTermLiabilities(null);
+        companyData.setEquity(null);
+        companyData.setTotalAssets(null);
+        companyData.setNetProfit(null);
+        companyData.setTaxes(null);
+        companyData.setFinancialLiabilities(null);
+        companyData.setCash(null);
+        companyData.setDepreciation(null);
+        companyData.setAmortization(null);
+        companyData.setSalesRevenueCurrent(null);
+        companyData.setSalesRevenue1YearOld(null);
+        return companyData;
+    }
+
     // --------------------------------------------------------------------------
 
 }
