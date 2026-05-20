@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.core.io.UrlResource;
@@ -497,6 +498,29 @@ public class PersonController {
         }
         catch(EntityNotFoundException e){
             return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/scores")
+    public ResponseEntity<?> getAllPersonScores(){
+          try {
+            List<Person> people = personService.getList();
+ 
+            List<Map<String, Integer>> scores = new ArrayList<>();
+
+            for (Person person : people) {
+                try {
+                    scores.add(personService.calculateScores(person.getId()));
+                    if(scores.getLast().get("totalScore").equals(0)) scores.remove(scores.getLast());
+                } catch (Exception e) {
+                    continue;
+                }
+           }
+
+            return ResponseEntity.ok(scores);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
 

@@ -96,78 +96,87 @@ public class CompanyService {
         BigDecimal changeInSalesRevenue = calculateChangeInSalesRevenue(data.getSalesRevenue1YearOld(), data.getSalesRevenueCurrent());
         BigDecimal quickLiquidityRatio =  calculateQuickLiquidityRatio(data.getShortTermAssets(),data.getInventory(),data.getShortTermLiabilities());
 
+        double quickLiquidityPoints = 0;
+        double equityRatioPoints = 0;
+        double interestCoveragePoints = 0;
+        double netDebtRatioPoints = 0;
+        double netProfitabilityPoints = 0;
+        double salesRevenuePoints = 0;
+
         // Quick Liquidity Ratio
-        if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(0.8))<0) {
+        if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(0.8)) < 0) {
         } else if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(1)) < 0) {
-            points += 50;
+            quickLiquidityPoints = 50;
         } else if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(1.2)) < 0) {
-            points += 100;
+            quickLiquidityPoints = 100;
         } else if (quickLiquidityRatio.compareTo(BigDecimal.valueOf(1.5)) < 0) {
-            points += 140;
+            quickLiquidityPoints = 140;
         } else {
-            points += 166.67;
+            quickLiquidityPoints = 166.67;
         }
+
+        points += quickLiquidityPoints;
 
         // Equity Ratio
         if (equityRatio.compareTo(BigDecimal.valueOf(0.2)) < 0) {
         } else if (equityRatio.compareTo(BigDecimal.valueOf(0.3)) < 0) {
-            points += 50;
+            equityRatioPoints = 50;
         } else if (equityRatio.compareTo(BigDecimal.valueOf(0.4)) < 0) {
-            points += 100;
+            equityRatioPoints = 100;
         } else if (equityRatio.compareTo(BigDecimal.valueOf(0.5)) < 0) {
-            points += 140;
+            equityRatioPoints = 140;
         } else {
-            points += 166.67;
+            equityRatioPoints = 166.67;
         }
-
+        points += equityRatioPoints;
         // Interest Coverage
         if (interestCoverage.compareTo(BigDecimal.valueOf(1)) < 0) {
         } else if (interestCoverage.compareTo(BigDecimal.valueOf(2)) <0) {
-            points += 50;
+            interestCoveragePoints = 50;
         } else if (interestCoverage.compareTo(BigDecimal.valueOf(3)) < 0) {
-            points += 100;
+            interestCoveragePoints = 100;
         } else if (interestCoverage.compareTo(BigDecimal.valueOf(5)) < 0) {
-            points += 140;
+            interestCoveragePoints = 140;
         } else {
-            points += 166.67;
+            interestCoveragePoints = 166.67;
         }
-
+        points += interestCoveragePoints;
         // Net Debt Ratio
         if (netDebtRatio.compareTo(BigDecimal.valueOf(5)) > 0) {
         } else if (netDebtRatio.compareTo(BigDecimal.valueOf(4)) >0) {
-            points += 50;
+            netDebtRatioPoints = 50;
         } else if (netDebtRatio.compareTo(BigDecimal.valueOf(3)) > 0) {
-            points += 100;
+            netDebtRatioPoints = 100;
         } else if (netDebtRatio.compareTo(BigDecimal.valueOf(2)) > 0) {
-            points += 140;
+            netDebtRatioPoints = 140;
         } else {
-            points += 166.67;
+            netDebtRatioPoints = 166.67;
         }
-
+        points += netDebtRatioPoints;
         // Net Profitability
         if (netProfitability.compareTo(BigDecimal.valueOf(0)) < 0) {
         } else if (netProfitability.compareTo(BigDecimal.valueOf(5)) <0) {
-            points += 50;
+            netProfitabilityPoints = 50;
         } else if (netProfitability.compareTo(BigDecimal.valueOf(10)) < 0) {
-            points += 100;
+            netProfitabilityPoints = 100;
         } else if (netProfitability.compareTo(BigDecimal.valueOf(15)) < 0) {
-            points += 140;
+            netProfitabilityPoints = 140;
         } else {
-            points += 166.67;
+            netProfitabilityPoints = 166.67;
         }
-
+        points += netProfitabilityPoints;
         // Change in Sales Revenue
         if (changeInSalesRevenue.compareTo(BigDecimal.valueOf(-10)) < 0) {
         } else if (changeInSalesRevenue.compareTo(BigDecimal.valueOf(0)) < 0) {
-            points += 50;
+            salesRevenuePoints = 50;
         } else if (changeInSalesRevenue.compareTo(BigDecimal.valueOf(5)) < 0) {
-            points += 100;
+            salesRevenuePoints = 100;
         } else if (changeInSalesRevenue.compareTo(BigDecimal.valueOf(15)) < 0) {
-            points += 140;
+            salesRevenuePoints = 140;
         } else {
-            points += 166.67;
+            salesRevenuePoints = 166.67;
         }
-
+        points+= salesRevenuePoints;
         if (points > 1000) {
             points = 1000;
         }
@@ -180,6 +189,12 @@ public class CompanyService {
         map.put("netDebtRatio", netDebtRatio);
         map.put("netProfitability", netProfitability);
         map.put("changeInSalesRevenue", changeInSalesRevenue);
+        map.put("quickLiquidityPoints", BigDecimal.valueOf(quickLiquidityPoints));
+        map.put("equityRatioPoints", BigDecimal.valueOf(equityRatioPoints));
+        map.put("interestCoveragePoints", BigDecimal.valueOf(interestCoveragePoints));
+        map.put("netDebtRatioPoints", BigDecimal.valueOf(netDebtRatioPoints));
+        map.put("netProfitabilityPoints", BigDecimal.valueOf(netProfitabilityPoints));
+        map.put("salesRevenuePoints", BigDecimal.valueOf(salesRevenuePoints));
 
         return map;
     }

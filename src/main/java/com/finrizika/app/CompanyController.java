@@ -16,6 +16,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -305,6 +306,29 @@ public class CompanyController {
         }
         catch(EntityNotFoundException e){
             return ResponseEntity.notFound().build();
+        }
+    }
+    @GetMapping("/get/scores")
+    public ResponseEntity<?> getAllPersonScores() {
+        
+        try {
+            List<Company> companies = companyService.getCompanyList();
+ 
+            List<Map<String, BigDecimal>> scores = new ArrayList<>();
+
+            for (Company company : companies) {
+            try {
+                scores.add(companyService.calculateScores(company.getId()));
+            } catch (Exception e) {
+                continue;
+            }
+           }
+
+            return ResponseEntity.ok(scores);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
     @GetMapping("/get/pages")
