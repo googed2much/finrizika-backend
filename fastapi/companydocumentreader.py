@@ -685,7 +685,7 @@ async def read_xhtml(filepath: str) -> dict | None:
                     data = {}
                     try_read_from_table(data, full_table, keyword, synonym, year, scale)
                     if data.get(keyword) is not None:
-                        print("Rule-based hit: %s = %s", synonym, data[keyword])
+                        print(f"Rule-based hit: {synonym} = {data[keyword]}")
                         candidates[keyword].append(Candidate(
                             value=data[keyword], scale=scale, source="rule_table",
                             synonym=synonym, confidence=CONFIDENCE["rule_table"]
@@ -694,9 +694,9 @@ async def read_xhtml(filepath: str) -> dict | None:
 
                     # llm table fallback
                     formatted = strip_empty_columns(format_table_for_llm(full_table))
-                    print("Querying LLM (table) for: %s", synonym)
+                    print(f"Querying LLM (table) for: {synonym}")
                     response = query_llm_table(formatted, synonym)
-                    print("LLM table response for %s: %s", synonym, response)
+                    print(f"LLM table response for {synonym}: {response}")
                     if response and response != "null" and not is_hallucinated(response, formatted):
                         val = parse_number(response)
                         if val is not None:
@@ -710,9 +710,9 @@ async def read_xhtml(filepath: str) -> dict | None:
                     if not para:
                         continue
                     scale = detect_scale(para)
-                    print("Querying LLM (paragraph) for: %s", synonym)
+                    print(f"Querying LLM (paragraph) for: {synonym}")
                     response = query_llm_paragraph(para, synonym)
-                    print("LLM paragraph response for %s: %s", synonym, response)
+                    print(f"LLM paragraph response for {synonym}: {response}")
                     if response and response != "null" and not is_hallucinated(response, para):
                         val = parse_number(response)
                         if val is not None:
