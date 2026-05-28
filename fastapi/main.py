@@ -35,7 +35,8 @@ except Exception as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_health_check()
-    print(f"Health check failed: {e}")
+    asyncio.create_task(worker())
+    yield
 
 queue = asyncio.Queue()
 results = {}
