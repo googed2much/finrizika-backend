@@ -724,7 +724,7 @@ async def read_xhtml(filepath: str) -> dict | None:
     result = {kw: pick_best_candidate(cs) for kw, cs in candidates.items()}
     missing = [kw for kw, v in result.items() if v is None]
     if missing:
-        print("Missing values for: %s", missing)
+        print(f"Missing values for: {missing}")
     return result
 
 async def read_pdf(filepath: str) -> dict:
@@ -756,7 +756,7 @@ async def read_pdf(filepath: str) -> dict:
                         data = {}
                         try_read_from_table(data, cleaned, keyword, synonym, year, scale)
                         if data.get(keyword) is not None:
-                            print("Rule-based hit: %s = %s", synonym, data[keyword])
+                            print(f"Rule-based hit: {synonym} = {data[keyword]}")
                             candidates[keyword].append(Candidate(
                                 value=data[keyword], scale=scale, source="rule_table",
                                 synonym=synonym, confidence=CONFIDENCE["rule_table"]
@@ -766,9 +766,9 @@ async def read_pdf(filepath: str) -> dict:
 
                         # llm table fallback
                         formatted = strip_empty_columns(format_table_for_llm(cleaned))
-                        print("Querying LLM (table) for: %s", synonym)
+                        print(f"Querying LLM (table) for: {synonym}")
                         response = query_llm_table(formatted, synonym)
-                        print("LLM table response for %s: %s", synonym, response)
+                        print(f"LLM table response for {synonym}: {response}")
                         if response and response != "null" and not is_hallucinated(response, formatted):
                             val = parse_number(response)
                             if val is not None:
@@ -787,9 +787,9 @@ async def read_pdf(filepath: str) -> dict:
                         if synonym.lower() in p.lower() and p.strip()
                     ]
                     for para in paragraphs:
-                        print("Querying LLM (paragraph) for: %s", synonym)
+                        print(f"Querying LLM (paragraph) for: {synonym}")
                         response = query_llm_paragraph(para, synonym)
-                        print("LLM paragraph response for %s: %s", synonym, response)
+                        print(f"LLM paragraph response for {synonym}: {response}")
                         if response and response != "null" and not is_hallucinated(response, para):
                             val = parse_number(response)
                             if val is not None:
@@ -801,7 +801,7 @@ async def read_pdf(filepath: str) -> dict:
     result = {kw: pick_best_candidate(cs) for kw, cs in candidates.items()}
     missing = [kw for kw, v in result.items() if v is None]
     if missing:
-        print("Missing values for: %s", missing)
+        print(f"Missing values for: {missing}")
     return result
 
 async def read_document(filepath: str) -> dict | None:
