@@ -1,7 +1,5 @@
-import ollama
 import pdfplumber as pp
 import re
-import datetime
 
 def format_table(table: list[list[str]]) -> str:
     if not table:

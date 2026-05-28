@@ -17,8 +17,7 @@ keywords = ('trumpalaikis turtas',
             'finansiniai įsipareigojimai',
             'grynieji pinigai',
             'pardavimų pajamos',
-            'pardavimų pajamos praeitų metų'
-            )
+            'pardavimų pajamos praeitų metų')
 
 # ------------------------------------------------------------------------------------------------------
 
@@ -256,7 +255,9 @@ def find_year_index(table, year):
 UNIT_INDICATORS = {'twh', 'mwh', 'gwh', 'kwh', 'mw', 'km', 'km²', 't', 'kt', 'vnt', 'avg'}
 
 def find_keyword_row(table, keyword):
-    keyword_clean = re.sub(r'\s+', ' ', keyword.strip().lower())
+    keyword_clean = normalize_lithuanian(
+        re.sub(r'\s+', ' ', keyword.strip())
+    )
     exact_match = None
     partial_match = None
     empty_value_match = None
@@ -374,16 +375,14 @@ def try_read_from_table(data, table, keyword, year, scale):
     print(f"  row: {row}")
     print(f"  value at year_index: {row[year_index] if year_index and year_index < len(row) else 'OUT OF RANGE'}")
     
-    result = extract_value(table, target_row_index, year_index or 2, scale)
+    result = extract_value(
+        table,
+        target_row_index,
+        year_index if year_index is not None else 2,
+        scale
+    )
     print(f"  extracted: {result}")
     data[keyword] = result
-
-# ------------------------------------------------------------------------------------------------------
-# paragraphs, divs
-# ------------------------------------------------------------------------------------------------------
-
-
-# ------------------------------------------------------------------------------------------------------
 
 def strip_empty_columns(formatted: str) -> str:
     lines = formatted.split('\n')
@@ -489,11 +488,21 @@ def query_llm_paragraph(paragraph: str, keyword: str) -> str:
 def is_hallucinated(value: str, source_text: str) -> bool:
     if not value or value == 'null':
         return False
-    # normalize: remove spaces, commas, dots for comparison
-    def normalize(s):
-        return re.sub(r'[\s,\.]', '', s)
-    
-    return normalize(value) not in normalize(source_text)
+
+    val = parse_number(value)
+    if val is None:
+        return True
+
+    numbers_in_text = re.findall(r'-?[\d\s]+[,.]?\d*', source_text)
+    parsed_numbers = [parse_number(n) for n in numbers_in_text if parse_number(n) is not None]
+
+    return not any(abs(val - n) < 1e-3 for n in parsed_numbers)
+
+def normalize_lithuanian(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r'[ąčęėįšųūž]', '', text)  # optional crude normalization
+    text = re.sub(r'(as|is|us|o|a|e|ų|ių|io|os|es)$', '', text)
+    return text
 
 # ------------------------------------------------------------------------------------------------------
 
@@ -602,7 +611,7 @@ async def read_pdf(filepath: str) -> dict:
                     formatted = format_table_for_llm(cleaned)
                     formatted = strip_empty_columns(formatted)
                     print(f"Querying LLM (table) for: {keyword}")
-                    response = query_llm_table(formatted, [keyword])
+                    response = query_llm_table(formatted, keyword)
                     print(f"LLM response: {response}")
                     if response and response != 'null' and not is_hallucinated(response, formatted):
                         try:

@@ -32,15 +32,11 @@ except Exception as e:
     print(f"An error occurred: {e}")
     exit()
 
-# --------------------------------------------------------------------------------------------------
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
     await init_health_check()
     asyncio.create_task(worker())
     yield
-    # shutdown (add cleanup here if needed)
 
 queue = asyncio.Queue()
 results = {}
