@@ -3,6 +3,7 @@ from os.path import join, isfile
 from sys import exit
 from companydocumentreader import read_document as read_company
 from persondocumentreader import read_document as read_person
+from companydocumentcomparer import read_compare_document as compare_company
 
 async def init_health_check():
     # Initialize the directory
@@ -26,6 +27,10 @@ async def init_health_check():
             print('-'*80)
         elif 'person' in file:
             result = await read_person(join(uploads_dir_test, file))
+            print(result)
+            print('-'*80)
+        elif 'compare' in file:
+            result = await compare_company(join(uploads_dir_test, file))
             print(result)
             print('-'*80)
 
