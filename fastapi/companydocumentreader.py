@@ -123,6 +123,51 @@ keywords = {
     ]
 }
 
+from dataclasses import dataclass, field
+
+@dataclass
+class Candidate:
+    value: float
+    scale: int
+    source: str        # "rule_table", "llm_table", "llm_paragraph"
+    synonym: str
+    confidence: float
+
+CONFIDENCE = {
+    "rule_table":    1.0,
+    "llm_table":     0.6,
+    "llm_paragraph": 0.35,
+}
+
+def pick_best_candidate(candidates: list[Candidate]) -> float | None:
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        return candidates[0].value
+
+    def same_value(a: float, b: float) -> bool:
+        if a == 0 and b == 0:
+            return True
+        return abs(a - b) / max(abs(a), abs(b)) < 0.005
+
+    groups: list[list[Candidate]] = []
+    for c in candidates:
+        for g in groups:
+            if same_value(g[0].value, c.value):
+                g.append(c)
+                break
+        else:
+            groups.append([c])
+
+    def group_score(g: list[Candidate]) -> float:
+        return sum(c.confidence for c in g) + 0.5 * (len(g) - 1)
+
+    best_group = max(groups, key=group_score)
+    best = max(best_group, key=lambda c: c.confidence)
+    print("  picked %.4f from '%s' via %s (group size %d, total candidates %d)",
+                 best.value, best.synonym, best.source, len(best_group), len(candidates))
+    return best.value
+
 # ------------------------------------------------------------------------------------------------------
 
 def detect_year_xhtml(soup) -> str:
@@ -603,7 +648,6 @@ def is_hallucinated(value: str, source_text: str) -> bool:
 # ------------------------------------------------------------------------------------------------------
 
 async def read_xhtml(filepath: str) -> dict | None:
-    data = {}
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             soup = BeautifulSoup(f, features="lxml")
@@ -612,149 +656,153 @@ async def read_xhtml(filepath: str) -> dict | None:
         return None
 
     year = detect_year_xhtml(soup)
+    candidates: dict[str, list[Candidate]] = {kw: [] for kw in keywords}
 
-    for keyword in keywords.keys():
-        found = False
-        for synonym in keywords[keyword]:
-            if found:
-                break
-            results = soup.find_all(string=re.compile(synonym, re.IGNORECASE))
+    for keyword, synonyms in keywords.items():
+        for synonym in synonyms:
+            results = soup.find_all(string=re.compile(re.escape(synonym), re.IGNORECASE))
             for result in results:
-                if found:
-                    break
+                table_tag = result.parent.find_parent("table")
 
-                # try parent table first
-                table = result.parent.find_parent("table")
-                if table is not None:
-                    table_text = table.get_text(separator=" ", strip=True)
-                    context = table.find_previous(string=True)
+                if table_tag is not None:
+                    table_text = table_tag.get_text(separator=" ", strip=True)
+                    context = table_tag.find_previous(string=True)
                     if context:
-                        table_text += " " + context
-
+                        table_text += " " + str(context)
                     scale = detect_scale(table_text)
 
                     full_table = []
-                    for row in table.find_all("tr"):
-                        cells = [clean_cell(td.get_text(separator=" ", strip=True)) for td in row.find_all(["td", "th"])]
+                    for row in table_tag.find_all("tr"):
+                        cells = [clean_cell(td.get_text(separator=" ", strip=True))
+                                 for td in row.find_all(["td", "th"])]
                         if any(c.strip() for c in cells):
                             full_table.append(cells)
 
                     if not full_table:
                         continue
 
+                    # rule-based
+                    data = {}
                     try_read_from_table(data, full_table, keyword, synonym, year, scale)
                     if data.get(keyword) is not None:
-                        print('rule-based worked')
-                        found = True
-                        break
+                        print("Rule-based hit: %s = %s", synonym, data[keyword])
+                        candidates[keyword].append(Candidate(
+                            value=data[keyword], scale=scale, source="rule_table",
+                            synonym=synonym, confidence=CONFIDENCE["rule_table"]
+                        ))
+                        continue  # skip LLM for this occurrence, but keep scanning others
 
-                    formatted = format_table_for_llm(full_table)
-                    formatted = strip_empty_columns(formatted)
-                    print(f"Querying LLM (table) for: {synonym}")
+                    # llm table fallback
+                    formatted = strip_empty_columns(format_table_for_llm(full_table))
+                    print("Querying LLM (table) for: %s", synonym)
                     response = query_llm_table(formatted, synonym)
-                    print(f"LLM response: {response}")
-                    if response and response != 'null' and not is_hallucinated(response, formatted):
-                        try:
-                            data[keyword] = parse_number(response) * scale
-                            found = True
-                        except Exception as e:
-                            print(e)
-                            continue
-                        break
+                    print("LLM table response for %s: %s", synonym, response)
+                    if response and response != "null" and not is_hallucinated(response, formatted):
+                        val = parse_number(response)
+                        if val is not None:
+                            candidates[keyword].append(Candidate(
+                                value=val * scale, scale=scale, source="llm_table",
+                                synonym=synonym, confidence=CONFIDENCE["llm_table"]
+                            ))
 
                 else:
-                    # fallback: extract paragraph around the match
                     para = result.parent.get_text(separator=" ", strip=True)
                     if not para:
                         continue
-
                     scale = detect_scale(para)
-                    print(f"Querying LLM (paragraph) for: {synonym}")
+                    print("Querying LLM (paragraph) for: %s", synonym)
                     response = query_llm_paragraph(para, synonym)
-                    print(f"LLM response: {response}")
-                    if response and response != 'null' and not is_hallucinated(response, para):
-                        try:
-                            data[keyword] = parse_number(response) * scale
-                            found = True
-                        except Exception as e:
-                            print(e)
-                            continue
-                        break
+                    print("LLM paragraph response for %s: %s", synonym, response)
+                    if response and response != "null" and not is_hallucinated(response, para):
+                        val = parse_number(response)
+                        if val is not None:
+                            candidates[keyword].append(Candidate(
+                                value=val * scale, scale=scale, source="llm_paragraph",
+                                synonym=synonym, confidence=CONFIDENCE["llm_paragraph"]
+                            ))
 
-    return data
+    result = {kw: pick_best_candidate(cs) for kw, cs in candidates.items()}
+    missing = [kw for kw, v in result.items() if v is None]
+    if missing:
+        print("Missing values for: %s", missing)
+    return result
 
 async def read_pdf(filepath: str) -> dict:
-    data = {}
+    candidates: dict[str, list[Candidate]] = {kw: [] for kw in keywords}
+
     with pp.open(filepath) as pdf:
         year = detect_year(pdf)
-        for keyword in keywords.keys():
-            found = False
-            for synonym in keywords[keyword]:
-                if found:
-                    break
+
+        for keyword, synonyms in keywords.items():
+            for synonym in synonyms:
                 for page in pdf.pages:
-                    if found:
-                        break
                     text = page.extract_text() or ""
                     if synonym.lower() not in text.lower():
                         continue
                     scale = detect_scale(text)
+                    found_in_table = False
 
-                    # try tables first
-                    tables = page.extract_tables()
-                    for table in tables:
+                    for table in page.extract_tables():
                         cleaned = format_table(table)
                         if not cleaned:
                             continue
 
+                        # skip irrelevant tables
+                        table_text = " ".join(cell for row in cleaned for cell in row if cell)
+                        if synonym.lower() not in table_text.lower():
+                            continue
+
+                        # rule-based
+                        data = {}
                         try_read_from_table(data, cleaned, keyword, synonym, year, scale)
                         if data.get(keyword) is not None:
-                            print('rule-based worked')
-                            found = True
-                            break
+                            print("Rule-based hit: %s = %s", synonym, data[keyword])
+                            candidates[keyword].append(Candidate(
+                                value=data[keyword], scale=scale, source="rule_table",
+                                synonym=synonym, confidence=CONFIDENCE["rule_table"]
+                            ))
+                            found_in_table = True
+                            continue  # skip LLM for this table, keep scanning others
 
-                        formatted = format_table_for_llm(cleaned)
-                        formatted = strip_empty_columns(formatted)
-                        print(f"Querying LLM (table) for: {synonym}")
+                        # llm table fallback
+                        formatted = strip_empty_columns(format_table_for_llm(cleaned))
+                        print("Querying LLM (table) for: %s", synonym)
                         response = query_llm_table(formatted, synonym)
-                        print(f"LLM response: {response}")
-                        if response and response != 'null' and not is_hallucinated(response, formatted):
-                            try:
-                                data[keyword] = parse_number(response) * scale
-                                found = True
-                            except Exception as e:
-                                print(e)
-                                continue
-                            break
+                        print("LLM table response for %s: %s", synonym, response)
+                        if response and response != "null" and not is_hallucinated(response, formatted):
+                            val = parse_number(response)
+                            if val is not None:
+                                candidates[keyword].append(Candidate(
+                                    value=val * scale, scale=scale, source="llm_table",
+                                    synonym=synonym, confidence=CONFIDENCE["llm_table"]
+                                ))
+                                found_in_table = True
 
-                    if found:
-                        break
+                    # paragraph fallback only if no table candidate found on this page
+                    if found_in_table:
+                        continue
 
-                    # fallback: extract relevant paragraphs from page text
                     paragraphs = [
                         p.strip() for p in re.split(r'\n{2,}', text)
                         if synonym.lower() in p.lower() and p.strip()
                     ]
-                    if not paragraphs:
-                        continue
-
                     for para in paragraphs:
-                        print(f"Querying LLM (paragraph) for: {synonym}")
+                        print("Querying LLM (paragraph) for: %s", synonym)
                         response = query_llm_paragraph(para, synonym)
-                        print(f"LLM response: {response}")
-                        if response and response != 'null' and not is_hallucinated(response, para):
-                            try:
-                                data[keyword] = parse_number(response) * scale
-                                found = True
-                            except Exception as e:
-                                print(e)
-                                continue
-                            break
+                        print("LLM paragraph response for %s: %s", synonym, response)
+                        if response and response != "null" and not is_hallucinated(response, para):
+                            val = parse_number(response)
+                            if val is not None:
+                                candidates[keyword].append(Candidate(
+                                    value=val * scale, scale=scale, source="llm_paragraph",
+                                    synonym=synonym, confidence=CONFIDENCE["llm_paragraph"]
+                                ))
 
-                    if found:
-                        break
-
-    return data
+    result = {kw: pick_best_candidate(cs) for kw, cs in candidates.items()}
+    missing = [kw for kw, v in result.items() if v is None]
+    if missing:
+        print("Missing values for: %s", missing)
+    return result
 
 async def read_document(filepath: str) -> dict | None:
     if filepath.endswith(('.xhtml', '.html')):
