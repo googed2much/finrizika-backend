@@ -47,19 +47,20 @@ public class CompanyData{
 
     static public CompanyData empty(){
         CompanyData companyData = new CompanyData();
-        companyData.setShortTermAssets(null);
-        companyData.setInventory(null);
-        companyData.setShortTermLiabilities(null);
-        companyData.setEquity(null);
-        companyData.setTotalAssets(null);
-        companyData.setNetProfit(null);
-        companyData.setTaxes(null);
-        companyData.setFinancialLiabilities(null);
-        companyData.setCash(null);
-        companyData.setDepreciation(null);
-        companyData.setAmortization(null);
-        companyData.setSalesRevenueCurrent(null);
-        companyData.setSalesRevenue1YearOld(null);
+        companyData.setShortTermAssets(BigDecimal.ZERO);
+        companyData.setInventory(BigDecimal.ZERO);
+        companyData.setShortTermLiabilities(BigDecimal.ZERO);
+        companyData.setEquity(BigDecimal.ZERO);
+        companyData.setTotalAssets(BigDecimal.ZERO);
+        companyData.setNetProfit(BigDecimal.ZERO);
+        companyData.setTaxes(BigDecimal.ZERO);
+        companyData.setFinancialLiabilities(BigDecimal.ZERO);
+        companyData.setCash(BigDecimal.ZERO);
+        companyData.setDepreciation(BigDecimal.ZERO);
+        companyData.setAmortization(BigDecimal.ZERO);
+        companyData.setSalesRevenueCurrent(BigDecimal.ZERO);
+        companyData.setSalesRevenue1YearOld(BigDecimal.ZERO);
+        companyData.setInterest(BigDecimal.ZERO);
         return companyData;
     }
 

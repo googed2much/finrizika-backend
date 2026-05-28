@@ -523,7 +523,11 @@ public class PersonController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
-
+    @GetMapping("/read/data/{id}")
+    public ResponseEntity<?> FetchCompanyDataFromFile(@PathVariable Long id) {
+        try {personService.readDataFromFile(id); return ResponseEntity.ok(id);}
+        catch(IOException e){return ResponseEntity.notFound().build();}
+    }
     // ----------------------------------------------------------------------------------------------------------------
     // POST REQUESTS FOR CREATING OR IMPORTING DATA
     // ----------------------------------------------------------------------------------------------------------------

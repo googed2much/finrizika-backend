@@ -14,11 +14,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import com.finrizika.app.CompanyController.CompanyDTO;
 import com.finrizika.app.CompanyController.UpdateCompanyDataDTO;
@@ -41,12 +48,18 @@ public class CompanyService {
     private String storagePath;
     private Path documentStorageLocation;
 
-    public CompanyService(CompanyRepository companyRepository, DocumentRepository documentRepository,CompanyDataRepository companyDataRepo) throws IOException{
+     public CompanyService(
+        CompanyRepository companyRepository,
+        DocumentRepository documentRepository,
+        CompanyDataRepository companyDataRepo,
+        RestTemplate restTemplate
+    ) {
         this.companyRepository = companyRepository;
         this.documentRepository = documentRepository;
         this.companyDataRepo = companyDataRepo;
+        this.restTemplate = restTemplate;
     }
-
+    private final RestTemplate restTemplate;
     @PostConstruct
     public void initializeStorage() throws IOException{
         this.documentStorageLocation = Paths.get(storagePath).toAbsolutePath().normalize();
@@ -56,10 +69,16 @@ public class CompanyService {
     // --------------------------------------------------------------------------------------------------------------
 
     public BigDecimal calculateQuickLiquidityRatio(BigDecimal shortTermAssets, BigDecimal inventory, BigDecimal shortTermLiabilities) {
+        if (shortTermLiabilities == null || shortTermLiabilities.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; 
+        }
         return (shortTermAssets.subtract(inventory)).divide(shortTermLiabilities, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateEquityRatio(BigDecimal equity, BigDecimal totalAssets) {
+        if (totalAssets == null || totalAssets.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; 
+        }
         return equity.divide(totalAssets,RoundingMode.HALF_UP);
     }
 
@@ -68,19 +87,31 @@ public class CompanyService {
     }
 
     public BigDecimal calculateInterestCoverage(BigDecimal ebit, BigDecimal interestExpenses) {
+         if (interestExpenses == null || interestExpenses.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; 
+        }
         return ebit.divide(interestExpenses,RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateNetDebtRatio(BigDecimal financialLiabilities, BigDecimal cash, BigDecimal ebit, BigDecimal depreciation,
             BigDecimal amortization) {
+        if (ebit.add(depreciation).add(amortization) == null || ebit.add(depreciation).add(amortization).compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; 
+        }
         return (financialLiabilities.subtract(cash)).divide((ebit.add(depreciation).add(amortization)),RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateNetProfitability(BigDecimal netProfit, BigDecimal salesRevenue) {
+         if (salesRevenue == null || salesRevenue.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; 
+        }
         return netProfit.divide(salesRevenue,RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateChangeInSalesRevenue(BigDecimal yearOldRev, BigDecimal currentRev) {
+        if (yearOldRev == null || yearOldRev.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; 
+        }
         return (currentRev.subtract(yearOldRev)).divide(yearOldRev,RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
     }
 
@@ -198,231 +229,107 @@ public class CompanyService {
 
         return map;
     }
-
+    private double toDouble(Object value) {
+        if (value == null) return 0.0;
+        if (value instanceof Number n) return n.doubleValue();
+        double val = Double.parseDouble(value.toString());
+        return Math.abs(val);
+    }
     public boolean readDataFromFile(Long companyId) throws IOException, RuntimeException{
         Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         List<Document> docs = company.getDocuments();
-        if (docs.isEmpty()) {
-            throw new RuntimeException("No documents found");
-        }
-        Document doc = docs.getLast();
-        if(doc.getFilename().endsWith(".xhtml")) {
-            org.jsoup.nodes.Document parsedHtml = Jsoup.parse(retrieveDocument(doc).getInputStream(), "UTF-8", "");
-            System.out.println("---- .xhtml TEXT START ----");
-            Elements rows = parsedHtml.select("tr");
-            int pinigaiirPiniguEkvivalentai = 0;
-            int atsargos = 0;
-            int trumpalaikiaiIsipareigojimai = 0;
+        Document primarySource = docs.getLast();
+        Document creditInfoSource = docs.get(docs.size()-2);
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new FileSystemResource(Paths.get("uploads", "documents", primarySource.getFilename())));
 
-            int nuosavasKapitalas =0;
-            int visasTurtas = 0;
+        String companyJobId = restTemplate.postForObject(
+            "http://host.docker.internal:8000/api/read/company",
+            body,
+            Map.class
+        ).get("job_id").toString();
+        Map companyResult;
+        Map creditResult;
+        System.out.println("Job ID: " + companyJobId);
+        while (true) {
+            companyResult = restTemplate.getForObject(
+                "http://host.docker.internal:8000/api/result/" + companyJobId,
+                Map.class
+            );
 
-            int grynasisPelnas =0;
-            int palukanos = 0;
-            int mokesciai =0;
-            //int palukanuSanaudos = 0;
-
-            int finansiniaiIsipareigojimai = 0;
-            int pinigai = 0;
-            int nusidevejimas = 0;
-            int nusidevejimasSkips =0;
-            
-            int amortizacijaSkips =0;
-            int amortizacija = 0;
-
-            int pardavimai = 0;
-            int pardavimaiOld = 0;
-
-            for(int i  =0;i<rows.size();i++){
-                String rowText = rows.get(i).text().toLowerCase();
-                
-                if(pinigaiirPiniguEkvivalentai==0)
-                if(rowText.contains("pinigai ir pinigų ekvivalentai")){
-                    // String[] values = rows.get(i+1).text().split(" ");
-                    Element row = rows.get(i+1);
-                    Elements els = row.select("td,th");
-                    
-                    pinigaiirPiniguEkvivalentai = Integer.parseInt((els.get(2).text().replaceAll(" ", "")));
-                    System.out.println(pinigaiirPiniguEkvivalentai);
-                    for (Element el : els) {
-                        System.out.println(el.toString());
-                    };
-                }
-                if(atsargos==0){
-                 if(rowText.contains("atsargos")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                    
-                    atsargos = Integer.parseInt((els.get(2).text().replaceAll(" ", "")));
-                    System.out.println(atsargos);
-                }   
-                }
-                 if(trumpalaikiaiIsipareigojimai==0){
-                 if(rowText.contains("trumpalaikiai atidėjiniai")){
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                    // String[] values = rows.get(i+1).text().split(" ");
-                    Element row = rows.get(i+1);
-                    Elements els = row.select("td,th");
-                    
-                    trumpalaikiaiIsipareigojimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                    System.out.println(trumpalaikiaiIsipareigojimai);
-                }   
-                }
-
-                if(nuosavasKapitalas==0){
-                 if(rowText.contains("akcininkų nuosavybės iš")){
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                    // String[] values = rows.get(i).text().split(" ");
-                    Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                    
-                    nuosavasKapitalas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                    System.out.println(nuosavasKapitalas);
-                }   
-                }
-                if(visasTurtas==0){
-                 if(rowText.contains("turto iš viso")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                    
-                    visasTurtas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                    System.out.println(visasTurtas);
-                }   
-                }
-
-                if(grynasisPelnas==0){
-                 if(rowText.contains("grynasis pelnas/(nuostoliai)")){
-                    // String[] values = rows.get(i).text().split(" ");
-                     Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                    
-                    grynasisPelnas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                   System.out.println(grynasisPelnas);
-                }   
-                }
-                if(palukanos==0){
-                 if(rowText.contains("finansinės veiklos sąnaudos")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                    Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                  
-                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
-                    palukanos = Integer.parseInt(els.get(2).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
-                    System.out.println(palukanos);
-                }   
-                }
-                if(mokesciai==0){
-                 if(rowText.contains("pelno mokestis")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                    Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                  
-                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
-                    mokesciai = Integer.parseInt(els.get(2).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
-                    System.out.println(mokesciai);
-                }   
-                }
-                if(finansiniaiIsipareigojimai==0){
-                 if(rowText.contains("finansinės skolos")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                     Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                    
-                    finansiniaiIsipareigojimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                   System.out.println(finansiniaiIsipareigojimai);
-                }   
-                }
-                if(pinigai==0){
-                 if(rowText.contains("pinigai ir pinigų ekvivalentai")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                      Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                    
-                    pinigai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                   System.out.println(pinigai);
-                }   
-                }
-                if(nusidevejimas==0){
-                 if(rowText.contains("nusidėvėjimas")){
-                    if(nusidevejimasSkips<11)nusidevejimasSkips+=1;
-                    else {
-                        // String[] values = rows.get(i).text().split(" ");
-                        System.out.println(rows.get(i).text());
-                        System.out.println(rows.get(i+1).text());
-                         Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                  
-                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
-                    nusidevejimas = Integer.parseInt(els.last().text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
-                   System.out.println(nusidevejimas);
-                    }
-                }   
-                }
-                if(amortizacija==0){
-                 if(rowText.contains("amortizacijos sąnaudos")){
-                    if(amortizacijaSkips<3)amortizacijaSkips+=1;
-                    else {
-                        // String[] values = rows.get(i).text().split(" ");
-                        System.out.println(rows.get(i).text());
-                        System.out.println(rows.get(i+1).text());
-                             Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                  
-                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
-                    amortizacija = Integer.parseInt(els.get(1).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
-                   System.out.println(amortizacija);
-                    }
-                }   
-                }
-
-                if(pardavimai==0){
-                 if(rowText.contains("pardavimai")){
-                    // String[] values = rows.get(i).text().split(" ");
-                    System.out.println(rows.get(i).text());
-                    System.out.println(rows.get(i+1).text());
-                    Element row = rows.get(i);
-                    Elements els = row.select("td,th");
-                 
-                    pardavimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
-                    pardavimaiOld = Integer.parseInt(els.get(3).text().replaceAll(" ",""));
-                    System.out.println(pardavimai);
-                    System.out.println(pardavimaiOld);
-                }   
-                }
+            Object status = companyResult.get("status");
+            if (status == null || !"pending".equals(status.toString())) break;
+           try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); 
+                throw new RuntimeException("Polling interrupted", e);
             }
-            UpdateCompanyDataDTO updateCompany = new UpdateCompanyDataDTO(companyId, BigDecimal.valueOf(pinigaiirPiniguEkvivalentai),
-                    BigDecimal.valueOf(atsargos),BigDecimal.valueOf(trumpalaikiaiIsipareigojimai),BigDecimal.valueOf(pinigai),
-                    BigDecimal.valueOf(nuosavasKapitalas),BigDecimal.valueOf(visasTurtas),BigDecimal.valueOf(grynasisPelnas),
-                    BigDecimal.valueOf(palukanos),BigDecimal.valueOf(mokesciai),BigDecimal.valueOf(finansiniaiIsipareigojimai),
-                    BigDecimal.valueOf(nusidevejimas),BigDecimal.valueOf(amortizacija),BigDecimal.valueOf(pardavimai),BigDecimal.valueOf(pardavimaiOld));
-            
-            updateCompanyData(updateCompany);
-            //System.out.println(parsedHtml);
-            System.out.println("---- .xhtml TEXT END ----");
         }
-        else {
-            try{ PDDocument pdf = PDDocument.load(retrieveDocument(doc).getInputStream());
-            PDFTextStripper stripper = new PDFTextStripper();
-            String text = stripper.getText(pdf);
-            String[] lines = text.split("\\r?\\n");
-            for(int i  =0;i<lines.length;i++){
-              
+
+        MultiValueMap<String, Object> body2 = new LinkedMultiValueMap<>();
+        body2.add("file", new FileSystemResource(Paths.get("uploads", "documents", creditInfoSource.getFilename())));
+
+        companyJobId = restTemplate.postForObject(
+            "http://host.docker.internal:8000/api/read/company",
+            body2,
+            Map.class
+        ).get("job_id").toString();
+        System.out.println("Job ID: " + companyJobId);
+        while (true) {
+            creditResult = restTemplate.getForObject(
+                "http://host.docker.internal:8000/api/result/" + companyJobId,
+                Map.class
+            );
+
+            Object creditStatus = creditResult.get("status");
+            if (creditStatus == null || !"pending".equals(creditStatus.toString())) break;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); 
+                throw new RuntimeException("Polling interrupted", e);
             }
-            }
-            catch (IOException e){ System.out.println("failed with loading");}
         }
+        System.out.println("---------Imones apskaitos result -----");
+        System.out.println("Company result: " + companyResult);
+
+        System.out.println("---------dabar credit-----");
+        System.out.println("Credit result: " + creditResult);
+        double trumpalaikisTurtas = toDouble(companyResult.get("trumpalaikis turtas"));
+        double atsargos = toDouble(companyResult.get("atsargos"));
+
+        double trumpalaikiaiIsipareigojimai = toDouble(companyResult.get("trumpalaikiai įsipareigojimai"));
+
+        double nuosavasKapitalas = toDouble(companyResult.get("nuosavas kapitalas"));
+
+        double visasTurtas = toDouble(companyResult.get("visas turtas"));
+
+        double grynasisPelnas = toDouble(companyResult.get("grynas pelnas"));
+
+        double palukanos = toDouble(companyResult.get("palūkanos"));
+
+        double mokesciai = toDouble(companyResult.get("sumokėti mokesčiai"));
+
+        double finansiniaiIsipareigojimai =toDouble(companyResult.get("finansiniai įsipareigojimai"));
+
+        double pinigai =toDouble(companyResult.get("grynieji pinigai"));
+
+        double nusidevejimas = toDouble(companyResult.get("nusidėvejimas"));
+
+        double amortizacija = toDouble(companyResult.get("amortizacija"));
+
+        double pardavimai = toDouble(companyResult.get("pardavimų pajamos"));
+
+        double pardavimaiOld = toDouble(companyResult.get("pardavimų pajamos praeitų metų"));
+        
+        UpdateCompanyDataDTO updateCompany = new UpdateCompanyDataDTO(companyId, BigDecimal.valueOf(trumpalaikisTurtas),
+            BigDecimal.valueOf(atsargos),BigDecimal.valueOf(trumpalaikiaiIsipareigojimai),BigDecimal.valueOf(pinigai),
+            BigDecimal.valueOf(nuosavasKapitalas),BigDecimal.valueOf(visasTurtas),BigDecimal.valueOf(grynasisPelnas),
+            BigDecimal.valueOf(palukanos),BigDecimal.valueOf(mokesciai),BigDecimal.valueOf(finansiniaiIsipareigojimai),
+            BigDecimal.valueOf(nusidevejimas),BigDecimal.valueOf(amortizacija),BigDecimal.valueOf(pardavimai),BigDecimal.valueOf(pardavimaiOld));
+    
+        updateCompanyData(updateCompany);
 
         return false;
     }
@@ -432,7 +339,7 @@ public class CompanyService {
     @Transactional(readOnly = true)
     public Long getLastPageInfo(){
         List<Company> companies = companyRepository.findAll();
-        Long lastPage = Double.valueOf(Math.ceil(companies.size() / NUM_ELEMENTS_PER_PAGE)).longValue();
+        Long lastPage =(companies.size()+NUM_ELEMENTS_PER_PAGE-1)/NUM_ELEMENTS_PER_PAGE;
         return lastPage;
     }
 

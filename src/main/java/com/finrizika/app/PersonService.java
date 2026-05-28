@@ -18,7 +18,10 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import com.finrizika.app.PersonController.CreateCreditApplicationDTO;
 import com.finrizika.app.PersonController.CreateCreditDTO;
@@ -30,7 +33,10 @@ import com.finrizika.app.PersonController.UpdateCreditApplicationDTO;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -44,15 +50,17 @@ public class PersonService {
     private final PaymentRepository paymentRepository;
     private final CreditApplicationRepository creditApplicationRepository;
 
-    public PersonService(PersonRepository personRepository, EmploymentRepository employmentRepository, DocumentRepository documentRepository, CreditRepository creditRepository, PaymentRepository paymentRepository, CreditApplicationRepository creditApplicationRepository) {
+    public PersonService(PersonRepository personRepository, EmploymentRepository employmentRepository, DocumentRepository documentRepository, CreditRepository creditRepository, PaymentRepository paymentRepository, CreditApplicationRepository creditApplicationRepository,RestTemplate restTemplate) {
         this.personRepository = personRepository;
         this.employmentRepository = employmentRepository;
         this.documentRepository = documentRepository;
         this.creditRepository = creditRepository;
         this.paymentRepository = paymentRepository;
         this.creditApplicationRepository = creditApplicationRepository;
+        this.restTemplate = restTemplate;
     }
-
+    
+    private final RestTemplate restTemplate;
     @Value("${app.document.upload-directory}")
     private String storagePath;
     private Path documentStorageLocation;
@@ -188,6 +196,98 @@ public class PersonService {
         scores.put("totalScore", total);
 
         return scores;
+    }
+    @Transactional
+    public boolean readDataFromFile(Long personId) throws IOException, RuntimeException {
+        Person person = personRepository.findById(personId)
+            .orElseThrow(() -> new EntityNotFoundException("Person not found."));
+
+        List<Document> docs = person.getDocuments();
+        Document primarySource = docs.getLast();
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new FileSystemResource(Paths.get("uploads", "documents", primarySource.getFilename())));
+
+        String jobId = restTemplate.postForObject(
+            "http://host.docker.internal:8000/api/read/person",
+            body,
+            Map.class
+        ).get("job_id").toString();
+
+        System.out.println("Job ID: " + jobId);
+
+         List<Map<String, Object>> personResult;
+         Map<String, Object> result;
+        while (true) {
+            personResult = restTemplate.exchange(
+            "http://host.docker.internal:8000/api/result/"+jobId,
+            HttpMethod.GET,
+            null,
+            new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+        ).getBody();
+
+            result = personResult.get(0);
+            Object status = result.get("status");
+            
+            if (status == null || !"pending".equals(status.toString())) break;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Polling interrupted", e);
+            }
+        }
+
+        System.out.println("--------- Person result -----");
+        System.out.println(personResult);
+
+       
+
+       for (Map<String, Object> creditData : personResult) {
+            Credit credit = new Credit();
+
+            credit.setAmount(toBigDecimal(creditData.get("amount")));
+            credit.setInterestRate(BigDecimal.ZERO);
+
+            credit.setIssuedDate(toLocalDate(creditData.get("date")));
+            credit.setDueDate(toLocalDate(creditData.get("date")));
+
+            credit.setStatus(CreditStatus.PAID);
+
+            credit.setType(resolveCreditType(toString(creditData.get("type"))));
+
+            credit.setLatePaymentCount(0L);
+
+            credit.setIndividual(person);
+
+            creditRepository.save(credit);
+        }
+
+        return false;
+    }
+
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        return new BigDecimal(value.toString());
+    }
+
+    private String toString(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private LocalDate toLocalDate(Object value) {
+        if (value == null) return null;
+        return LocalDate.parse(value.toString()); 
+    }
+
+    private CreditType resolveCreditType(String type) {
+        if (type == null) return CreditType.SHORT_TERM;
+        return switch (type.toUpperCase()) {
+            case "PASKOLA", "LIZINGAS" -> CreditType.LONG_TERM;
+            default -> CreditType.SHORT_TERM; 
+        };
     }
     // ----------------------------------------------------------------------------------------------------------------------------------
 
