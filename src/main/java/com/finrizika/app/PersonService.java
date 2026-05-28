@@ -49,6 +49,8 @@ public class PersonService {
     private final CreditRepository creditRepository;
     private final PaymentRepository paymentRepository;
     private final CreditApplicationRepository creditApplicationRepository;
+    @Value("${fastapi.url}")
+    private String fastapiUrl;
 
     public PersonService(PersonRepository personRepository, EmploymentRepository employmentRepository, DocumentRepository documentRepository, CreditRepository creditRepository, PaymentRepository paymentRepository, CreditApplicationRepository creditApplicationRepository,RestTemplate restTemplate) {
         this.personRepository = personRepository;
@@ -209,7 +211,7 @@ public class PersonService {
         body.add("file", new FileSystemResource(Paths.get("uploads", "documents", primarySource.getFilename())));
 
         String jobId = restTemplate.postForObject(
-            "http://host.docker.internal:8000/api/read/person",
+            fastapiUrl + "/api/read/person",
             body,
             Map.class
         ).get("job_id").toString();
@@ -220,7 +222,7 @@ public class PersonService {
          Map<String, Object> result;
         while (true) {
             personResult = restTemplate.exchange(
-            "http://host.docker.internal:8000/api/result/"+jobId,
+            fastapiUrl + "/api/result/" + jobId,
             HttpMethod.GET,
             null,
             new ParameterizedTypeReference<List<Map<String, Object>>>() {}

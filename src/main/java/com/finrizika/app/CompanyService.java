@@ -273,14 +273,14 @@ public class CompanyService {
         body2.add("file", new FileSystemResource(Paths.get("uploads", "documents", creditInfoSource.getFilename())));
 
         companyJobId = restTemplate.postForObject(
-            "http://host.docker.internal:8000/api/read/company",
+            fastapiUrl + "/api/read/company",
             body2,
             Map.class
         ).get("job_id").toString();
         System.out.println("Job ID: " + companyJobId);
         while (true) {
             creditResult = restTemplate.getForObject(
-                "http://host.docker.internal:8000/api/result/" + companyJobId,
+                fastapiUrl + "/api/read/company" + "/api/result/" + companyJobId,
                 Map.class
             );
 
