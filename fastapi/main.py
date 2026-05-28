@@ -13,12 +13,6 @@ from healthchecker import init_health_check
 from companydocumentreader import read_document as read_company
 from persondocumentreader import read_document as read_person
 
-# -------------------------------------------------------------------------------------------------
-# Health check (does not turn on the microservice app if the initial health check fails)
-# -------------------------------------------------------------------------------------------------
-
-asyncio.run(init_health_check())
-
 # --------------------------------------------------------------------------------------------------
 # Microservice initialization
 # --------------------------------------------------------------------------------------------------
@@ -43,6 +37,7 @@ except Exception as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
+    await init_health_check()
     asyncio.create_task(worker())
     yield
     # shutdown (add cleanup here if needed)
