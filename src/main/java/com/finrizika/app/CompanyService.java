@@ -47,6 +47,8 @@ public class CompanyService {
     @Value("${app.document.upload-directory}")
     private String storagePath;
     private Path documentStorageLocation;
+    @Value("${fastapi.url}")
+    private String fastapiUrl;
 
      public CompanyService(
         CompanyRepository companyRepository,
@@ -244,7 +246,7 @@ public class CompanyService {
         body.add("file", new FileSystemResource(Paths.get("uploads", "documents", primarySource.getFilename())));
 
         String companyJobId = restTemplate.postForObject(
-            "http://host.docker.internal:8000/api/read/company",
+            "{}/api/read/company",
             body,
             Map.class
         ).get("job_id").toString();

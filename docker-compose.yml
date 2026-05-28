@@ -6,10 +6,12 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+      - fastapi
     environment:
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/finrizika_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      FASTAPI_URL: ${FASTAPI_URL}
     networks:
       - finrizika_network
     security_opt:
@@ -38,6 +40,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    fastapi:
+      build: ./document-reader
+      volumes:
 
 volumes:
   mariadb_data:
