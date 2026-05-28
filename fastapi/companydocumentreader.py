@@ -4,20 +4,124 @@ import pdfplumber as pp
 import re
 import datetime
 
-keywords = ('trumpalaikis turtas', 
-            'atsargos', 
-            'trumpalaikiai įsipareigojimai', 
-            'nuosavas kapitalas', 
-            'visas turtas', 
-            'grynas pelnas', 
-            'palūkanos', 
-            'sumokėti mokesčiai', 
-            'nusidėvejimas',
-            'amortizacija',
-            'finansiniai įsipareigojimai',
-            'grynieji pinigai',
-            'pardavimų pajamos',
-            'pardavimų pajamos praeitų metų')
+keywords = {
+    "trumpalaikis turtas": [
+        "trumpalaikis turtas",
+        "trumpalaikis turtas iš viso",
+        "trumpalaikio turto suma",
+        "trumpalaikio turto iš viso",
+        "trumpalaikis turtas (viso)"
+    ],
+
+    "atsargos": [
+        "atsargos",
+        "atsargų suma",
+        "atsargų likutis",
+        "prekių atsargos",
+        "žaliavų atsargos",
+        "medžiagų atsargos",
+        "produkcijos atsargos",
+        "nebaigta gamyba"
+    ],
+
+    "trumpalaikiai įsipareigojimai": [
+        "trumpalaikiai įsipareigojimai",
+        "trumpalaikiai įsipareigojimai iš viso",
+        "trumpalaikių įsipareigojimų suma",
+        "trumpalaikiai įsipareigojimai (viso)",
+        "mokėtinos sumos",
+        "trumpalaikės skolos",
+        "per vienerius metus mokėtinos sumos"
+    ],
+
+    "nuosavas kapitalas": [
+        "nuosavas kapitalas",
+        "nuosavas kapitalas iš viso",
+        "nuosavo kapitalo suma",
+        "akcininkų nuosavybė",
+        "kapitalas ir rezervai",
+        "savas kapitalas"
+    ],
+
+    "visas turtas": [
+        "visas turtas",
+        "turtas iš viso",
+        "turto suma",
+        "viso turto",
+        "bendras turtas",
+        "turtas (viso)"
+    ],
+
+    "grynas pelnas": [
+        "grynas pelnas",
+        "grynasis pelnas",
+        "grynasis laikotarpio pelnas",
+        "grynasis rezultatas",
+        "pelno (nuostolių) rezultatas",
+        "ataskaitinio laikotarpio pelnas"
+    ],
+
+    "palūkanos": [
+        "palūkanos",
+        "palūkanų sąnaudos",
+        "palūkanų išlaidos",
+        "sumokėtos palūkanos",
+        "finansinės sąnaudos"
+    ],
+
+    "sumokėti mokesčiai": [
+        "sumokėti mokesčiai",
+        "sumokėti pelno mokesčiai",
+        "sumokėtas pelno mokestis",
+        "pelno mokestis",
+        "pelno mokesčio sąnaudos",
+        "mokesčių išlaidos"
+    ],
+
+    "nusidėvėjimas": [
+        "nusidėvėjimas",
+        "ilgalaikio turto nusidėvėjimas",
+        "nusidėvėjimo sąnaudos"
+    ],
+
+    "amortizacija": [
+        "amortizacija",
+        "nematerialiojo turto amortizacija",
+        "amortizacijos sąnaudos"
+    ],
+
+    "finansiniai įsipareigojimai": [
+        "finansiniai įsipareigojimai",
+        "finansinės skolos",
+        "skolos finansinėms institucijoms",
+        "paskolos",
+        "įsipareigojimai kredito įstaigoms"
+    ],
+
+    "grynieji pinigai": [
+        "grynieji pinigai",
+        "pinigai ir pinigų ekvivalentai",
+        "pinigų likutis",
+        "grynųjų pinigų likutis"
+    ],
+
+    "pardavimų pajamos": [
+        "pardavimų pajamos",
+        "pardavimo pajamos",
+        "pardavimo pajamų suma",
+        "įplaukos",
+        "apyvarta",
+        "grynosios pardavimo pajamos"
+    ],
+
+    "pardavimų pajamos praeitų metų": [
+        "pardavimų pajamos praėjusiais metais",
+        "praėjusių metų pajamos",
+        "ankstesnių metų pajamos",
+        "praeito laikotarpio pajamos",
+        "lyginamasis laikotarpis"
+    ]
+}
 
 # ------------------------------------------------------------------------------------------------------
 
@@ -255,9 +359,7 @@ def find_year_index(table, year):
 UNIT_INDICATORS = {'twh', 'mwh', 'gwh', 'kwh', 'mw', 'km', 'km²', 't', 'kt', 'vnt', 'avg'}
 
 def find_keyword_row(table, keyword):
-    keyword_clean = normalize_lithuanian(
-        re.sub(r'\s+', ' ', keyword.strip())
-    )
+    keyword_clean = re.sub(r'\s+', ' ', keyword.strip())
     exact_match = None
     partial_match = None
     empty_value_match = None
@@ -360,12 +462,12 @@ def extract_value(table, row_index, year_index, scale):
 
     return None
 
-def try_read_from_table(data, table, keyword, year, scale):
+def try_read_from_table(data, table, keyword, synonym, year, scale):
     year_index = find_year_index(table, year)
     print(f"  year_index: {year_index} (year={year})")
     
-    target_row_index = find_keyword_row(table, keyword)
-    print(f"  target_row_index: {target_row_index} (keyword={keyword})")
+    target_row_index = find_keyword_row(table, synonym)
+    print(f"  target_row_index: {target_row_index} (keyword={synonym})")
     
     if target_row_index is None:
         data[keyword] = None
@@ -498,12 +600,6 @@ def is_hallucinated(value: str, source_text: str) -> bool:
 
     return not any(abs(val - n) < 1e-3 for n in parsed_numbers)
 
-def normalize_lithuanian(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r'[ąčęėįšųūž]', '', text)  # optional crude normalization
-    text = re.sub(r'(as|is|us|o|a|e|ų|ių|io|os|es)$', '', text)
-    return text
-
 # ------------------------------------------------------------------------------------------------------
 
 async def read_xhtml(filepath: str) -> dict | None:
@@ -517,101 +613,45 @@ async def read_xhtml(filepath: str) -> dict | None:
 
     year = detect_year_xhtml(soup)
 
-    for keyword in keywords:
+    for keyword in keywords.keys():
         found = False
-        results = soup.find_all(string=re.compile(keyword, re.IGNORECASE))
-
-        for result in results:
+        for synonym in keywords[keyword]:
             if found:
                 break
-
-            # try parent table first
-            table = result.parent.find_parent("table")
-            if table is not None:
-                table_text = table.get_text(separator=" ", strip=True)
-                scale = detect_scale(table_text)
-
-                full_table = []
-                for row in table.find_all("tr"):
-                    cells = [clean_cell(td.get_text(separator=" ", strip=True)) for td in row.find_all(["td", "th"])]
-                    if any(c.strip() for c in cells):
-                        full_table.append(cells)
-
-                if not full_table:
-                    continue
-
-                try_read_from_table(data, full_table, keyword, year, scale)
-                if data.get(keyword) is not None:
-                    print('rule-based worked')
-                    found = True
-                    break
-
-                formatted = format_table_for_llm(full_table)
-                formatted = strip_empty_columns(formatted)
-                print(f"Querying LLM (table) for: {keyword}")
-                response = query_llm_table(formatted, keyword)
-                print(f"LLM response: {response}")
-                if response and response != 'null' and not is_hallucinated(response, formatted):
-                    try:
-                        data[keyword] = parse_number(response) * scale
-                        found = True
-                    except Exception as e:
-                        print(e)
-                        continue
-                    break
-
-            else:
-                # fallback: extract paragraph around the match
-                para = result.parent.get_text(separator=" ", strip=True)
-                if not para:
-                    continue
-
-                scale = detect_scale(para)
-                print(f"Querying LLM (paragraph) for: {keyword}")
-                response = query_llm_paragraph(para, keyword)
-                print(f"LLM response: {response}")
-                if response and response != 'null' and not is_hallucinated(response, para):
-                    try:
-                        data[keyword] = parse_number(response) * scale
-                        found = True
-                    except Exception as e:
-                        print(e)
-                        continue
-                    break
-
-    return data
-
-async def read_pdf(filepath: str) -> dict:
-    data = {}
-    with pp.open(filepath) as pdf:
-        year = detect_year(pdf)
-        for keyword in keywords:
-            found = False
-            for page in pdf.pages:
+            results = soup.find_all(string=re.compile(synonym, re.IGNORECASE))
+            for result in results:
                 if found:
                     break
-                text = page.extract_text() or ""
-                if keyword.lower() not in text.lower():
-                    continue
-                scale = detect_scale(text)
 
-                # try tables first
-                tables = page.extract_tables()
-                for table in tables:
-                    cleaned = format_table(table)
-                    if not cleaned:
+                # try parent table first
+                table = result.parent.find_parent("table")
+                if table is not None:
+                    table_text = table.get_text(separator=" ", strip=True)
+                    context = table.find_previous(string=True)
+                    if context:
+                        table_text += " " + context
+
+                    scale = detect_scale(table_text)
+
+                    full_table = []
+                    for row in table.find_all("tr"):
+                        cells = [clean_cell(td.get_text(separator=" ", strip=True)) for td in row.find_all(["td", "th"])]
+                        if any(c.strip() for c in cells):
+                            full_table.append(cells)
+
+                    if not full_table:
                         continue
 
-                    try_read_from_table(data, cleaned, keyword, year, scale)
+                    try_read_from_table(data, full_table, keyword, synonym, year, scale)
                     if data.get(keyword) is not None:
                         print('rule-based worked')
                         found = True
                         break
 
-                    formatted = format_table_for_llm(cleaned)
+                    formatted = format_table_for_llm(full_table)
                     formatted = strip_empty_columns(formatted)
-                    print(f"Querying LLM (table) for: {keyword}")
-                    response = query_llm_table(formatted, keyword)
+                    print(f"Querying LLM (table) for: {synonym}")
+                    response = query_llm_table(formatted, synonym)
                     print(f"LLM response: {response}")
                     if response and response != 'null' and not is_hallucinated(response, formatted):
                         try:
@@ -622,20 +662,15 @@ async def read_pdf(filepath: str) -> dict:
                             continue
                         break
 
-                if found:
-                    break
+                else:
+                    # fallback: extract paragraph around the match
+                    para = result.parent.get_text(separator=" ", strip=True)
+                    if not para:
+                        continue
 
-                # fallback: extract relevant paragraphs from page text
-                paragraphs = [
-                    p.strip() for p in re.split(r'\n{2,}', text)
-                    if keyword.lower() in p.lower() and p.strip()
-                ]
-                if not paragraphs:
-                    continue
-
-                for para in paragraphs:
-                    print(f"Querying LLM (paragraph) for: {keyword}")
-                    response = query_llm_paragraph(para, keyword)
+                    scale = detect_scale(para)
+                    print(f"Querying LLM (paragraph) for: {synonym}")
+                    response = query_llm_paragraph(para, synonym)
                     print(f"LLM response: {response}")
                     if response and response != 'null' and not is_hallucinated(response, para):
                         try:
@@ -646,8 +681,78 @@ async def read_pdf(filepath: str) -> dict:
                             continue
                         break
 
+    return data
+
+async def read_pdf(filepath: str) -> dict:
+    data = {}
+    with pp.open(filepath) as pdf:
+        year = detect_year(pdf)
+        for keyword in keywords.keys():
+            found = False
+            for synonym in keywords[keyword]:
                 if found:
                     break
+                for page in pdf.pages:
+                    if found:
+                        break
+                    text = page.extract_text() or ""
+                    if synonym.lower() not in text.lower():
+                        continue
+                    scale = detect_scale(text)
+
+                    # try tables first
+                    tables = page.extract_tables()
+                    for table in tables:
+                        cleaned = format_table(table)
+                        if not cleaned:
+                            continue
+
+                        try_read_from_table(data, cleaned, keyword, synonym, year, scale)
+                        if data.get(keyword) is not None:
+                            print('rule-based worked')
+                            found = True
+                            break
+
+                        formatted = format_table_for_llm(cleaned)
+                        formatted = strip_empty_columns(formatted)
+                        print(f"Querying LLM (table) for: {synonym}")
+                        response = query_llm_table(formatted, synonym)
+                        print(f"LLM response: {response}")
+                        if response and response != 'null' and not is_hallucinated(response, formatted):
+                            try:
+                                data[keyword] = parse_number(response) * scale
+                                found = True
+                            except Exception as e:
+                                print(e)
+                                continue
+                            break
+
+                    if found:
+                        break
+
+                    # fallback: extract relevant paragraphs from page text
+                    paragraphs = [
+                        p.strip() for p in re.split(r'\n{2,}', text)
+                        if synonym.lower() in p.lower() and p.strip()
+                    ]
+                    if not paragraphs:
+                        continue
+
+                    for para in paragraphs:
+                        print(f"Querying LLM (paragraph) for: {synonym}")
+                        response = query_llm_paragraph(para, synonym)
+                        print(f"LLM response: {response}")
+                        if response and response != 'null' and not is_hallucinated(response, para):
+                            try:
+                                data[keyword] = parse_number(response) * scale
+                                found = True
+                            except Exception as e:
+                                print(e)
+                                continue
+                            break
+
+                    if found:
+                        break
 
     return data
 
@@ -655,8 +760,7 @@ async def read_document(filepath: str) -> dict | None:
     if filepath.endswith(('.xhtml', '.html')):
         data = await read_xhtml(filepath)
     elif filepath.endswith('.pdf'):
-        data = None
-        #data = await read_pdf(filepath)
+        data = await read_pdf(filepath)
     else:
         data = None
     return data

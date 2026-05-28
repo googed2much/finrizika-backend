@@ -44,10 +44,26 @@ services:
 
   fastapi:
     build: ./fastapi
+    networks:
+      - finrizika_network
+    ports:
+      - "8081:8081"
 
   ollama:
     image: ollama/ollama
-    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull llama3.2 && wait"]
+    entrypoint: >
+      sh -c "
+      ollama serve &
+      until ollama list >/dev/null 2>&1; do
+        sleep 1
+      done
+      ollama pull llama3.2
+      wait
+      "
+    networks:
+      - finrizika_network
+    ports:
+      - "11434:11434"
 
 volumes:
   mariadb_data:
