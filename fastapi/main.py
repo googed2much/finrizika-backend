@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from healthchecker import init_health_check
 from companydocumentreader import read_document as read_company
 from persondocumentreader import read_document as read_person
+from companydocumentcomparer import read_compare_document as compare_document
 
 # --------------------------------------------------------------------------------------------------
 # Microservice initialization
@@ -34,17 +35,9 @@ except Exception as e:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        await init_health_check()
-        print("Health check initialized")
-    except Exception as e:
-        print(f"Health check failed: {e}")
-    asyncio.create_task(worker()) 
-    # startup finished
+    #await init_health_check() # TODO: not skip this one
+    asyncio.create_task(worker())
     yield
-
-    # shutdown logic here if needed
-    print("Shutting down...")
 
 queue = asyncio.Queue()
 results = {}
@@ -56,6 +49,8 @@ async def worker():
         try:
             if kind == 'company':
                 results[job_id] = await read_company(filepath)
+            elif kind == 'company_compare':
+                results[job_id] = await compare_document(filepath)
             elif kind == 'person':
                 results[job_id] = await read_person(filepath)
         except Exception as e:
@@ -83,6 +78,17 @@ async def enqueue_person(file: UploadFile):
         f.write(await file.read())
     job_id = str(uuid.uuid4())
     await queue.put((job_id, 'person', filepath))
+    return {"job_id": job_id, "position": queue.qsize()}
+
+@app.post("/api/compare/company")
+async def unqueue_compare_company(file: UploadFile):
+    if not file.filename:
+        return JSONResponse(status_code=400, content={"error": "No file provided"})
+    filepath = join(uploads_dir, file.filename)
+    with open(filepath, "wb") as f:
+        f.write(await file.read())
+    job_id = str(uuid.uuid4())
+    await queue.put((job_id, 'company_compare', filepath))
     return {"job_id": job_id, "position": queue.qsize()}
 
 @app.get("/api/result/{job_id}")
