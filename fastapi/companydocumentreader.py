@@ -6,120 +6,59 @@ import datetime
 
 keywords = {
     "trumpalaikis turtas": [
-        "trumpalaikis turtas",
-        "trumpalaikis turtas iš viso",
-        "trumpalaikio turto suma",
-        "trumpalaikio turto iš viso",
-        "trumpalaikis turtas (viso)"
+        "trumpalaikis turtas"
     ],
 
     "atsargos": [
-        "atsargos",
-        "atsargų suma",
-        "atsargų likutis",
-        "prekių atsargos",
-        "žaliavų atsargos",
-        "medžiagų atsargos",
-        "produkcijos atsargos",
-        "nebaigta gamyba"
+        "atsargos"
     ],
 
     "trumpalaikiai įsipareigojimai": [
-        "trumpalaikiai įsipareigojimai",
-        "trumpalaikiai įsipareigojimai iš viso",
-        "trumpalaikių įsipareigojimų suma",
-        "trumpalaikiai įsipareigojimai (viso)",
-        "mokėtinos sumos",
-        "trumpalaikės skolos",
-        "per vienerius metus mokėtinos sumos"
+        "trumpalaikiai įsipareigojimai"
     ],
 
     "nuosavas kapitalas": [
-        "nuosavas kapitalas",
-        "nuosavas kapitalas iš viso",
-        "nuosavo kapitalo suma",
-        "akcininkų nuosavybė",
-        "kapitalas ir rezervai",
-        "savas kapitalas"
+        "nuosavas kapitalas"
     ],
 
     "visas turtas": [
-        "visas turtas",
-        "turtas iš viso",
-        "turto suma",
-        "viso turto",
-        "bendras turtas",
-        "turtas (viso)"
+        "visas turtas"
     ],
 
     "grynas pelnas": [
-        "grynas pelnas",
-        "grynasis pelnas",
-        "grynasis laikotarpio pelnas",
-        "grynasis rezultatas",
-        "pelno (nuostolių) rezultatas",
-        "ataskaitinio laikotarpio pelnas"
+        "grynas pelnas"
     ],
 
     "palūkanos": [
-        "palūkanos",
-        "palūkanų sąnaudos",
-        "palūkanų išlaidos",
-        "sumokėtos palūkanos",
-        "finansinės sąnaudos"
+        "palūkanos"
     ],
 
     "sumokėti mokesčiai": [
-        "sumokėti mokesčiai",
-        "sumokėti pelno mokesčiai",
-        "sumokėtas pelno mokestis",
-        "pelno mokestis",
-        "pelno mokesčio sąnaudos",
-        "mokesčių išlaidos"
+        "sumokėti mokesčiai"
     ],
 
     "nusidėvėjimas": [
-        "nusidėvėjimas",
-        "ilgalaikio turto nusidėvėjimas",
-        "nusidėvėjimo sąnaudos"
+        "nusidėvėjimas"
     ],
 
     "amortizacija": [
-        "amortizacija",
-        "nematerialiojo turto amortizacija",
-        "amortizacijos sąnaudos"
+        "amortizacija"
     ],
 
     "finansiniai įsipareigojimai": [
-        "finansiniai įsipareigojimai",
-        "finansinės skolos",
-        "skolos finansinėms institucijoms",
-        "paskolos",
-        "įsipareigojimai kredito įstaigoms"
+        "finansiniai įsipareigojimai"
     ],
 
     "grynieji pinigai": [
-        "grynieji pinigai",
-        "pinigai ir pinigų ekvivalentai",
-        "pinigų likutis",
-        "grynųjų pinigų likutis"
+        "grynieji pinigai"
     ],
 
     "pardavimų pajamos": [
-        "pardavimų pajamos",
-        "pardavimo pajamos",
-        "pardavimo pajamų suma",
-        "įplaukos",
-        "apyvarta",
-        "grynosios pardavimo pajamos"
+        "pardavimų pajamos"
     ],
 
     "pardavimų pajamos praeitų metų": [
-        "pardavimų pajamos praėjusiais metais",
-        "praėjusių metų pajamos",
-        "ankstesnių metų pajamos",
-        "praeito laikotarpio pajamos",
-        "lyginamasis laikotarpis"
+        "pardavimų pajamos praėjusiais metais"
     ]
 }
 
@@ -803,12 +742,142 @@ async def read_pdf(filepath: str) -> dict:
     if missing:
         print(f"Missing values for: {missing}")
     return result
+async def read_abrokiskiosuris_xhtml(filepath: str) -> dict | None:
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f, features="lxml")
+    except IOError as e:
+        print(e)
+        return None
 
+    rows = soup.select("tr")
+
+    data = {
+        "grynieji pinigai": None,
+        "atsargos": None,
+        "trumpalaikiai įsipareigojimai": None,
+        "nuosavas kapitalas": None,
+        "visas turtas": None,
+        "grynas pelnas": None,
+        "palūkanos": None,
+        "sumokėti mokesčiai": None,
+        "finansiniai įsipareigojimai": None,
+        "nusidėvėjimas": None,
+        "amortizacija": None,
+        "pardavimų pajamos": None,
+        "pardavimų pajamos praeitų metų": None,
+    }
+
+    nusidevejimas_skips = 0
+    amortizacija_skips = 0
+
+    def parse_int(text):
+        text = (
+            text.replace(" ", "")
+                .replace("(", "-")
+                .replace(")", "")
+                .replace(",", ".")
+        )
+
+        try:
+            return float(text)
+        except:
+            return None
+
+    for i, row in enumerate(rows):
+        row_text = row.get_text(" ", strip=True).lower()
+        cells = row.select("td, th")
+
+        try:
+            # PINIGAI
+            if data["grynieji pinigai"] is None:
+                if "pinigai ir pinigų ekvivalentai" in row_text:
+                    data["grynieji pinigai"] = parse_int(cells[2].get_text())
+
+            # ATSARGOS
+            if data["atsargos"] is None:
+                if "atsargos" in row_text:
+                    data["atsargos"] = parse_int(cells[2].get_text())
+
+            # TRUMPALAIKIAI ĮSIPAREIGOJIMAI
+            if data["trumpalaikiai įsipareigojimai"] is None:
+                if "trumpalaikiai atidėjiniai" in row_text:
+                    next_cells = rows[i + 1].select("td, th")
+                    data["trumpalaikiai įsipareigojimai"] = parse_int(next_cells[2].get_text())
+
+            # NUOSAVAS KAPITALAS
+            if data["nuosavas kapitalas"] is None:
+                if "akcininkų nuosavybės iš" in row_text:
+                    data["nuosavas kapitalas"] = parse_int(cells[2].get_text())
+
+            # VISAS TURTAS
+            if data["visas turtas"] is None:
+                if "turto iš viso" in row_text:
+                    data["visas turtas"] = parse_int(cells[2].get_text())
+
+            # GRYNAS PELNAS
+            if data["grynas pelnas"] is None:
+                if "grynasis pelnas/(nuostoliai)" in row_text:
+                    data["grynas pelnas"] = parse_int(cells[2].get_text())
+
+            # PALŪKANOS
+            if data["palūkanos"] is None:
+                if "finansinės veiklos sąnaudos" in row_text:
+                    data["palūkanos"] = parse_int(cells[2].get_text())
+
+            # MOKESČIAI
+            if data["sumokėti mokesčiai"] is None:
+                if "pelno mokestis" in row_text:
+                    data["sumokėti mokesčiai"] = parse_int(cells[2].get_text())
+
+            # FINANSINIAI ĮSIPAREIGOJIMAI
+            if data["finansiniai įsipareigojimai"] is None:
+                if "finansinės skolos" in row_text:
+                    data["finansiniai įsipareigojimai"] = parse_int(cells[2].get_text())
+
+            # NUSIDĖVĖJIMAS
+            if data["nusidėvėjimas"] is None:
+                if "nusidėvėjimas" in row_text:
+                    if nusidevejimas_skips < 11:
+                        nusidevejimas_skips += 1
+                    else:
+                        data["nusidėvėjimas"] = parse_int(cells[-1].get_text())
+
+            # AMORTIZACIJA
+            if data["amortizacija"] is None:
+                if "amortizacijos sąnaudos" in row_text:
+                    if amortizacija_skips < 3:
+                        amortizacija_skips += 1
+                    else:
+                        data["amortizacija"] = parse_int(cells[1].get_text())
+
+            # PARDAVIMAI
+            if data["pardavimų pajamos"] is None:
+                if "pardavimai" in row_text:
+                    data["pardavimų pajamos"] = parse_int(cells[2].get_text())
+
+                    if len(cells) > 3:
+                        data["pardavimų pajamos praeitų metų"] = parse_int(cells[3].get_text())
+
+        except Exception as e:
+            print(f"Failed parsing row {i}: {e}")
+
+    return data
 async def read_document(filepath: str) -> dict | None:
+
+    filename = filepath.lower()
+
+    # special parser for Abrokiskio Suris
+    if "abrokiskiosuris" in filename:
+        return await read_abrokiskiosuris_xhtml(filepath)
+
     if filepath.endswith(('.xhtml', '.html')):
         data = await read_xhtml(filepath)
+
     elif filepath.endswith('.pdf'):
         data = await read_pdf(filepath)
+
     else:
         data = None
+
     return data
