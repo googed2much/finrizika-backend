@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -389,10 +390,19 @@ public class CompanyController {
             return ResponseEntity.notFound().build();
         }
     }
-    @GetMapping("/read/data/{id}")
-    public ResponseEntity<?> FetchCompanyDataFromFile(@PathVariable Long id) {
-        try {companyService.readDataFromFile(id); return ResponseEntity.ok(id);}
-        catch(IOException e){return ResponseEntity.notFound().build();}
+   @GetMapping("/read/data/{id}")
+    public ResponseEntity<?> fetchCompanyDataFromFile(@PathVariable Long id) {
+        try {
+            boolean validity = companyService.readDataFromFile(id);
+
+            Map<String, Boolean> response = new HashMap<>();
+            response.put("validity", validity);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
     
     // ------------------------------------------------------------------------
