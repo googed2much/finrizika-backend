@@ -265,7 +265,6 @@ public class CompanyController {
         }
     }
 
-   
     @GetMapping("/get/{id}/documents")
     public ResponseEntity<?> getDocumentList(@PathVariable Long id){
         try{
