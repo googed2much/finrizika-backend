@@ -66,7 +66,9 @@ public class UserService {
     public Long updateUser(UserDTO dto){
         User user = userRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("User not found: " + dto.getId()));
         user.setEmail(dto.getEmail());
-        user.setPassword(encoder.encode(dto.getPassword()));
+        if(dto.getPassword() != null){
+            user.setPassword(encoder.encode(dto.getPassword()));
+        }
         user.setTelephone(dto.getTelephone());
         user.setFullname(dto.getFullname());
         user.setCitizenId(dto.getCitizenId());
