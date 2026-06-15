@@ -12,6 +12,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/finrizika_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      APP_DEV_MODE: "false"
       FASTAPI_URL: ${FASTAPI_URL}
     networks:
       - finrizika_network

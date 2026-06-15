@@ -52,7 +52,6 @@ public class Credit {
     @Column(nullable = false)
     private LocalDate issuedDate;
 
-    @Column(nullable = false)
     private LocalDate dueDate;
 
     @Column(nullable = true)

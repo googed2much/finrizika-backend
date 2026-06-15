@@ -231,17 +231,21 @@ public class CompanyService {
 
         return map;
     }
+
     private double toDouble(Object value) {
         if (value == null) return 0.0;
         if (value instanceof Number n) return n.doubleValue();
         double val = Double.parseDouble(value.toString());
         return Math.abs(val);
     }
+    
     public boolean readDataFromFile(Long companyId) throws IOException, RuntimeException{
         Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
         List<Document> docs = company.getDocuments();
+        if (docs.size() < 1) {
+            throw new RuntimeException("Reikalingi bent 1 dokumentas: įmonės apskaita ar kredito istorija");
+        }
         Document primarySource = docs.getLast();
-        Document creditInfoSource = docs.get(docs.size()-2);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(Paths.get("uploads", "documents", primarySource.getFilename())));
 
@@ -267,7 +271,7 @@ public class CompanyService {
         System.out.println("Job ID: " + companyJobId);
         while (true) {
             companyResult = restTemplate.getForObject(
-                "http://host.docker.internal:8000/api/result/" + companyJobId,
+                fastapiUrl+"/api/result/" + companyJobId,
                 Map.class
             );
 
@@ -283,6 +287,7 @@ public class CompanyService {
           
         }
 
+        /*
         MultiValueMap<String, Object> body2 = new LinkedMultiValueMap<>();
         body2.add("file", new FileSystemResource(Paths.get("uploads", "documents", creditInfoSource.getFilename())));
         try {
@@ -314,11 +319,10 @@ public class CompanyService {
             if(!fastApi) break;
           
         }
+        */
         System.out.println("---------Imones apskaitos result -----");
         System.out.println("Company result: " + companyResult);
 
-        System.out.println("---------dabar credit-----");
-        System.out.println("Credit result: " + creditResult);
         double trumpalaikisTurtas = toDouble(companyResult.get("trumpalaikis turtas"));
         double atsargos = toDouble(companyResult.get("atsargos"));
 

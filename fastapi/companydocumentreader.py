@@ -742,6 +742,7 @@ async def read_pdf(filepath: str) -> dict:
     if missing:
         print(f"Missing values for: {missing}")
     return result
+
 async def read_abrokiskiosuris_xhtml(filepath: str) -> dict | None:
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -863,6 +864,7 @@ async def read_abrokiskiosuris_xhtml(filepath: str) -> dict | None:
             print(f"Failed parsing row {i}: {e}")
 
     return data
+
 async def read_document(filepath: str) -> dict | None:
 
     filename = filepath.lower()

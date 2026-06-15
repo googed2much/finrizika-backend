@@ -254,7 +254,7 @@ public class PersonService {
             credit.setIssuedDate(toLocalDate(creditData.get("date")));
             credit.setDueDate(toLocalDate(creditData.get("date")));
 
-            credit.setStatus(CreditStatus.PAID);
+            credit.setStatus(CreditStatus.ACTIVE);
 
             credit.setType(resolveCreditType(toString(creditData.get("type"))));
 
