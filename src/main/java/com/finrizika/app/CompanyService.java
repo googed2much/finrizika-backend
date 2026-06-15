@@ -249,11 +249,23 @@ public class CompanyService {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(Paths.get("uploads", "documents", primarySource.getFilename())));
 
-        String companyJobId = restTemplate.postForObject(
-            fastapiUrl+"/api/read/company",
-            body,
-            Map.class
-        ).get("job_id").toString();
+        String companyJobId = "";
+        boolean fastApi = true;
+        try {
+            companyJobId = restTemplate.postForObject(
+                fastapiUrl + "/api/read/company",
+                body,
+                Map.class
+            ).get("job_id").toString();
+        }
+        catch (Exception e) {
+            System.out.println("FastAPI unavailable");
+            fastApi=false;
+        }
+        if (!fastApi) {
+            readDataFromSpecificFile(companyId);
+            return false;
+        }
         Map companyResult;
         Map creditResult;
         System.out.println("Job ID: " + companyJobId);
@@ -271,18 +283,25 @@ public class CompanyService {
                 Thread.currentThread().interrupt(); 
                 throw new RuntimeException("Polling interrupted", e);
             }
+            if(!fastApi) break;
+          
         }
 
         /*
         MultiValueMap<String, Object> body2 = new LinkedMultiValueMap<>();
         body2.add("file", new FileSystemResource(Paths.get("uploads", "documents", creditInfoSource.getFilename())));
-
+        try {
         companyJobId = restTemplate.postForObject(
             fastapiUrl + "/api/read/company",
             body2,
             Map.class
         ).get("job_id").toString();
         System.out.println("Job ID: " + companyJobId);
+        }
+        catch(Exception e){
+            System.out.println("fastapi not working");
+            fastApi= false;
+        }
         while (true) {
             creditResult = restTemplate.getForObject(
                 fastapiUrl + "/api/read/company" + "/api/result/" + companyJobId,
@@ -297,6 +316,8 @@ public class CompanyService {
                 Thread.currentThread().interrupt(); 
                 throw new RuntimeException("Polling interrupted", e);
             }
+            if(!fastApi) break;
+          
         }
         */
         System.out.println("---------Imones apskaitos result -----");
@@ -336,6 +357,234 @@ public class CompanyService {
             BigDecimal.valueOf(nusidevejimas),BigDecimal.valueOf(amortizacija),BigDecimal.valueOf(pardavimai),BigDecimal.valueOf(pardavimaiOld));
     
         updateCompanyData(updateCompany);
+        if(primarySource.getFilename().contains("rokiskio")) readDataFromSpecificFile(companyId);
+        double creditResultPardavimai = toDouble(creditResult.get("pardavimų pajamos"));
+        return creditResultPardavimai==pardavimai;
+    }
+    public boolean readDataFromSpecificFile(Long companyId) throws IOException, RuntimeException{
+        Company company = companyRepository.findById(companyId).orElseThrow(() -> new EntityNotFoundException("Person not found."));
+        List<Document> docs = company.getDocuments();
+        if (docs.isEmpty()) {
+            throw new RuntimeException("No documents found");
+        }
+        Document doc = docs.getLast();
+        if(doc.getFilename().endsWith(".xhtml")) {
+            org.jsoup.nodes.Document parsedHtml = Jsoup.parse(retrieveDocument(doc).getInputStream(), "UTF-8", "");
+            System.out.println("---- .xhtml TEXT START ----");
+            Elements rows = parsedHtml.select("tr");
+            int pinigaiirPiniguEkvivalentai = 0;
+            int atsargos = 0;
+            int trumpalaikiaiIsipareigojimai = 0;
+
+            int nuosavasKapitalas =0;
+            int visasTurtas = 0;
+
+            int grynasisPelnas =0;
+            int palukanos = 0;
+            int mokesciai =0;
+            //int palukanuSanaudos = 0;
+
+            int finansiniaiIsipareigojimai = 0;
+            int pinigai = 0;
+            int nusidevejimas = 0;
+            int nusidevejimasSkips =0;
+            
+            int amortizacijaSkips =0;
+            int amortizacija = 0;
+
+            int pardavimai = 0;
+            int pardavimaiOld = 0;
+
+            for(int i  =0;i<rows.size();i++){
+                String rowText = rows.get(i).text().toLowerCase();
+                
+                if(pinigaiirPiniguEkvivalentai==0)
+                if(rowText.contains("pinigai ir pinigų ekvivalentai")){
+                    // String[] values = rows.get(i+1).text().split(" ");
+                    Element row = rows.get(i+1);
+                    Elements els = row.select("td,th");
+                    
+                    pinigaiirPiniguEkvivalentai = Integer.parseInt((els.get(2).text().replaceAll(" ", "")));
+                    System.out.println(pinigaiirPiniguEkvivalentai);
+                    for (Element el : els) {
+                        System.out.println(el.toString());
+                    };
+                }
+                if(atsargos==0){
+                 if(rowText.contains("atsargos")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    atsargos = Integer.parseInt((els.get(2).text().replaceAll(" ", "")));
+                    System.out.println(atsargos);
+                }   
+                }
+                 if(trumpalaikiaiIsipareigojimai==0){
+                 if(rowText.contains("trumpalaikiai atidėjiniai")){
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                    // String[] values = rows.get(i+1).text().split(" ");
+                    Element row = rows.get(i+1);
+                    Elements els = row.select("td,th");
+                    
+                    trumpalaikiaiIsipareigojimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                    System.out.println(trumpalaikiaiIsipareigojimai);
+                }   
+                }
+
+                if(nuosavasKapitalas==0){
+                 if(rowText.contains("akcininkų nuosavybės iš")){
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                    // String[] values = rows.get(i).text().split(" ");
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    nuosavasKapitalas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                    System.out.println(nuosavasKapitalas);
+                }   
+                }
+                if(visasTurtas==0){
+                 if(rowText.contains("turto iš viso")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    visasTurtas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                    System.out.println(visasTurtas);
+                }   
+                }
+
+                if(grynasisPelnas==0){
+                 if(rowText.contains("grynasis pelnas/(nuostoliai)")){
+                    // String[] values = rows.get(i).text().split(" ");
+                     Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    grynasisPelnas = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                   System.out.println(grynasisPelnas);
+                }   
+                }
+                if(palukanos==0){
+                 if(rowText.contains("finansinės veiklos sąnaudos")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    palukanos = Integer.parseInt(els.get(2).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
+                    System.out.println(palukanos);
+                }   
+                }
+                if(mokesciai==0){
+                 if(rowText.contains("pelno mokestis")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    mokesciai = Integer.parseInt(els.get(2).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
+                    System.out.println(mokesciai);
+                }   
+                }
+                if(finansiniaiIsipareigojimai==0){
+                 if(rowText.contains("finansinės skolos")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                     Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    finansiniaiIsipareigojimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                   System.out.println(finansiniaiIsipareigojimai);
+                }   
+                }
+                if(pinigai==0){
+                 if(rowText.contains("pinigai ir pinigų ekvivalentai")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                      Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                    
+                    pinigai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                   System.out.println(pinigai);
+                }   
+                }
+                if(nusidevejimas==0){
+                 if(rowText.contains("nusidėvėjimas")){
+                    if(nusidevejimasSkips<11)nusidevejimasSkips+=1;
+                    else {
+                        // String[] values = rows.get(i).text().split(" ");
+                        System.out.println(rows.get(i).text());
+                        System.out.println(rows.get(i+1).text());
+                         Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    nusidevejimas = Integer.parseInt(els.last().text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
+                   System.out.println(nusidevejimas);
+                    }
+                }   
+                }
+                if(amortizacija==0){
+                 if(rowText.contains("amortizacijos sąnaudos")){
+                    if(amortizacijaSkips<3)amortizacijaSkips+=1;
+                    else {
+                        // String[] values = rows.get(i).text().split(" ");
+                        System.out.println(rows.get(i).text());
+                        System.out.println(rows.get(i+1).text());
+                             Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                  
+                    // palukanos = Integer.parseInt((values[4].replace("(", "").strip()+values[5].substring(0,values[5].length()-1)));
+                    amortizacija = Integer.parseInt(els.get(1).text().replaceAll(" ", "").replaceAll("\\(", "").replaceAll("\\)", ""));
+                   System.out.println(amortizacija);
+                    }
+                }   
+                }
+
+                if(pardavimai==0){
+                 if(rowText.contains("pardavimai")){
+                    // String[] values = rows.get(i).text().split(" ");
+                    System.out.println(rows.get(i).text());
+                    System.out.println(rows.get(i+1).text());
+                    Element row = rows.get(i);
+                    Elements els = row.select("td,th");
+                 
+                    pardavimai = Integer.parseInt(els.get(2).text().replaceAll(" ", ""));
+                    pardavimaiOld = Integer.parseInt(els.get(3).text().replaceAll(" ",""));
+                    System.out.println(pardavimai);
+                    System.out.println(pardavimaiOld);
+                }   
+                }
+            }
+            UpdateCompanyDataDTO updateCompany = new UpdateCompanyDataDTO(companyId, BigDecimal.valueOf(pinigaiirPiniguEkvivalentai),
+                    BigDecimal.valueOf(atsargos),BigDecimal.valueOf(trumpalaikiaiIsipareigojimai),BigDecimal.valueOf(pinigai),
+                    BigDecimal.valueOf(nuosavasKapitalas),BigDecimal.valueOf(visasTurtas),BigDecimal.valueOf(grynasisPelnas),
+                    BigDecimal.valueOf(palukanos),BigDecimal.valueOf(mokesciai),BigDecimal.valueOf(finansiniaiIsipareigojimai),
+                    BigDecimal.valueOf(nusidevejimas),BigDecimal.valueOf(amortizacija),BigDecimal.valueOf(pardavimai),BigDecimal.valueOf(pardavimaiOld));
+            
+            updateCompanyData(updateCompany);
+            //System.out.println(parsedHtml);
+            System.out.println("---- .xhtml TEXT END ----");
+        }
+        else {
+            try{ PDDocument pdf = PDDocument.load(retrieveDocument(doc).getInputStream());
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(pdf);
+            String[] lines = text.split("\\r?\\n");
+            for(int i  =0;i<lines.length;i++){
+              
+            }
+            }
+            catch (IOException e){ System.out.println("failed with loading");}
+        }
 
         return false;
     }
