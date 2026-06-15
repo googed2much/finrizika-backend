@@ -102,30 +102,25 @@ public class PersonService {
 
     // ----------------------------------------------------------------------------------------------------------------------------------
 
-    @Transactional(readOnly = true)
     private boolean checkEmployment(Person person){
         long jobCount = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).count();
         if(jobCount > 0) return true;
         return false;
     }
 
-    @Transactional(readOnly = true)
     private Integer dtiScoring(Person person){
         List<Credit> creditHistory = person.getCreditHistory();
-        List<Credit> activeCredits = creditHistory.stream().filter(credit -> credit.getStatus() == CreditStatus.ACTIVE).toList();
-        BigDecimal monthlyPayment = activeCredits.stream().map(credit -> {
-            List<Payment> payments = credit.getPayments();
-            if(payments.size() != 0) return payments.get(0).getAmount();
-            return BigDecimal.ZERO;
-        }).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal activeCreditSum = creditHistory.stream().filter(credit -> credit.getStatus() == CreditStatus.ACTIVE).map(Credit::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal dti = monthlyPayment.divide(currentSalary, 10, RoundingMode.HALF_UP);
+        if (currentSalary.compareTo(BigDecimal.ZERO) == 0) {
+            return 0;
+        }
+        BigDecimal dti = activeCreditSum.divide(currentSalary, 10, RoundingMode.HALF_UP);
         if(dti.compareTo(BigDecimal.valueOf(0.5)) > 0) return 0;
         else if(dti.compareTo(BigDecimal.valueOf(0.3)) < 0) return 30;
         else return 15;
     }
 
-    @Transactional(readOnly = true)
     private Integer latenessCreditScoring(Person person){
         List<Credit> creditHistoryPast2Years = person.getCreditHistory().stream().filter(credit -> credit.getIssuedDate().plusYears(2).isAfter(LocalDate.now())).toList();
         Long latePaymentCount = creditHistoryPast2Years.stream().mapToLong(credit -> credit.getLatePaymentCount()==null? 0: credit.getLatePaymentCount()).sum();
@@ -134,7 +129,6 @@ public class PersonService {
         else return 40;
     }
 
-    @Transactional(readOnly = true)
     private Integer salaryScoring(Person person){
         BigDecimal currentSalary = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).map(Employment::getSalary).reduce(BigDecimal.ZERO, BigDecimal::add);
         if(currentSalary.compareTo(BigDecimal.valueOf(1000)) < 0) return 0;
@@ -142,7 +136,6 @@ public class PersonService {
         else return 10;
     }
 
-    @Transactional(readOnly = true)
     private Integer lengthScoring(Person person){
         List<Employment> currentJobs = person.getEmploymentHistory().stream().filter(employment -> employment.getEndDate() == null).toList();
         OptionalLong biggestLength = currentJobs.stream().mapToLong(job -> ChronoUnit.YEARS.between(job.getStartDate(), LocalDate.now())).max();
@@ -150,7 +143,6 @@ public class PersonService {
         else return 30;
     }
 
-    @Transactional(readOnly = true)
     public Integer calculateScore(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
 
@@ -167,7 +159,6 @@ public class PersonService {
         return score;
     }
 
-    @Transactional(readOnly = true)
     public Map<String, Integer> calculateScores(Long personId){
         Person person = personRepository.findById(personId).orElseThrow(() -> new EntityNotFoundException("User not found."));
 
@@ -199,6 +190,7 @@ public class PersonService {
 
         return scores;
     }
+
     @Transactional
     public boolean readDataFromFile(Long personId) throws IOException, RuntimeException {
         Person person = personRepository.findById(personId)
